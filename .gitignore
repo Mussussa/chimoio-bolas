@@ -1,4 +1,9 @@
 node_modules/
 dist/
 .env
+.env.*
+!.env.example
 backend/.env
+frontend/.env.local
+backend/logs/
+supabase/.temp/
