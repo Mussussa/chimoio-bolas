@@ -84,7 +84,6 @@ input:focus, textarea:focus, select:focus { border-color: #4a8fba; box-shadow: 0
 .form-grid .wide { grid-column: 1/-1; }
 textarea { min-height: 82px; resize: vertical; }
 .form-grid > button { justify-self: start; }
-.campaign-form { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
 .negotiations { padding-top: 18px; }
 .negotiation-card { margin: 12px 0; padding: 20px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
 .negotiation-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
@@ -125,6 +124,6 @@ footer span:first-child { color: var(--blue); font-weight: 800; letter-spacing: 
   .form-grid .wide { grid-column: auto; }
   .search-box { flex-direction: column; min-width: 0; }
   .message-form { grid-template-columns: 1fr; }
-  .campaign-form, footer { align-items: flex-start; flex-direction: column; }
+  footer { align-items: flex-start; flex-direction: column; }
   .section { padding-top: 48px; padding-bottom: 48px; }
 }

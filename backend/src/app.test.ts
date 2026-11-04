@@ -47,4 +47,16 @@ describe("API Express", () => {
       error_code: "VALIDATION_ERROR"
     });
   });
+
+  it("não disponibiliza rotas removidas de campanhas, subscrições ou escrow", async () => {
+    const removedRoutes = [
+      request(app).post("/api/campaigns").send({}),
+      request(app).post("/api/providers/renew").send({}),
+      request(app).post("/api/admin/ad-batches/11111111-1111-4111-8111-111111111111/publish-meta").send({}),
+      request(app).post("/api/negotiations/11111111-1111-4111-8111-111111111111/escrow").send({})
+    ];
+    const responses = await Promise.all(removedRoutes);
+    expect(responses.map((response) => response.status)).toEqual([404, 404, 404, 404]);
+    expect(responses.every((response) => response.body.error_code === "NOT_FOUND")).toBe(true);
+  });
 });

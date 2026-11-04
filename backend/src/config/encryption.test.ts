@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { Sequelize } from "sequelize";
 import { decryptField, encryptField } from "./encryption.js";
-import { decryptModelField, initializeModels, Negotiation, User } from "../models/index.js";
+import { decryptModelField, initializeModels, Negotiation, ServiceProvider, User } from "../models/index.js";
 
 const testKey = Buffer.alloc(32, 7).toString("base64");
 const sequelize = new Sequelize("postgres://test:test@127.0.0.1:5432/test", { logging: false });
@@ -10,6 +10,14 @@ initializeModels(sequelize);
 describe("encriptação AES-256-GCM em repouso", () => {
   beforeEach(() => {
     process.env.FIELD_ENCRYPTION_KEY = testKey;
+  });
+
+  it("mantém o esquema aberto sem tabelas ou campos de cobrança", () => {
+    expect(sequelize.models).not.toHaveProperty("Campaign");
+    expect(sequelize.models).not.toHaveProperty("AdBatch");
+    expect(ServiceProvider.rawAttributes).not.toHaveProperty("subscriptionTier");
+    expect(ServiceProvider.rawAttributes).not.toHaveProperty("subscriptionExpiresAt");
+    expect(Negotiation.rawAttributes).not.toHaveProperty("escrowStatus");
   });
 
   it("cifra e decifra campos sensíveis", () => {
@@ -36,7 +44,6 @@ describe("encriptação AES-256-GCM em repouso", () => {
       serviceId: "33333333-3333-4333-8333-333333333333",
       status: "pending",
       agreedPrice: null,
-      escrowStatus: "inactive",
       clientProofFile: "client/proof.jpg",
       providerProofFile: "provider/proof.jpg"
     });

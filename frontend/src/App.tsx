@@ -7,10 +7,10 @@ import MapExplorer from "./components/MapExplorer";
 type Profile = { id: string; name: string; email: string; phone: string | null; role: "client" | "lojista" | "prestador" | "admin" };
 type Store = { id: string; owner_id: string; name: string; category: string; description: string; address: string; latitude: number; longitude: number; verified: boolean };
 type Product = { id: string; store_id: string; name: string; description: string; price: string; category: string; images: string[] };
-type ServiceProvider = { id: string; user_id: string; category: string; bio: string; subscription_tier: string; subscription_expires_at: string; verified: boolean };
+type ServiceProvider = { id: string; user_id: string; category: string; bio: string; base_price: string; verified: boolean; platform_member: boolean };
 type Service = { id: string; provider_id: string; title: string; description: string; price: string; delivery_time: string; published: boolean; internal_platform_service: boolean };
 type Negotiation = {
-  id: string; client_id: string; status: string; agreed_price: string | null; escrow_status: string;
+  id: string; client_id: string; status: string; agreed_price: string | null;
   messages: Array<{ id: string; sender_id: string; content: string; message_type: string; proposal_amount: string | null }>;
 };
 type Catalog = { stores: Store[]; products: Product[]; providers: ServiceProvider[]; services: Service[] };
@@ -29,7 +29,7 @@ export default function App() {
   const [coordinates, setCoordinates] = useState<[number, number] | null>(null);
   const [authForm, setAuthForm] = useState({ email: "", password: "" });
   const [authMode, setAuthMode] = useState<"login" | "signup">("login");
-  const [providerForm, setProviderForm] = useState({ category: "", bio: "", basePrice: "", subscriptionTier: "basico" });
+  const [providerForm, setProviderForm] = useState({ category: "", bio: "", basePrice: "" });
   const [serviceForm, setServiceForm] = useState({ title: "", description: "", price: "", deliveryTime: "" });
   const [storeForm, setStoreForm] = useState({ name: "", slug: "", category: "", description: "", address: "", latitude: "-19.1164", longitude: "33.4833" });
   const [productForm, setProductForm] = useState({ name: "", description: "", price: "", category: "" });
@@ -218,18 +218,6 @@ export default function App() {
     if (result && session) await loadNegotiations(session);
   }
 
-  async function changeEscrow(negotiationId: string, action: "fund" | "dispute" | "release" | "deliver") {
-    const proofFile = action === "deliver" ? window.prompt("Referência do comprovativo de entrega:")?.trim() : undefined;
-    if (action === "deliver" && !proofFile) return;
-    const result = await runApi(`/negotiations/${negotiationId}/escrow`, { action, ...(proofFile ? { proofFile } : {}) });
-    if (result && session) await loadNegotiations(session);
-  }
-
-  async function renewSubscription() {
-    const result = await runApi("/providers/renew", { subscriptionTier: ownProvider?.subscription_tier ?? "basico" });
-    if (result) await loadCatalog();
-  }
-
   function locate() {
     if (!navigator.geolocation) return setNotice({ text: "GPS não está disponível neste dispositivo.", error: true });
     navigator.geolocation.getCurrentPosition(
@@ -238,9 +226,9 @@ export default function App() {
     );
   }
 
-  async function createCampaign(event: FormEvent) {
-    event.preventDefault();
-    await runApi("/campaigns", { targetType: "custom", packageType: "basico" });
+  async function completeNegotiation(negotiationId: string) {
+    const result = await runApi(`/negotiations/${negotiationId}/complete`, {});
+    if (result && session) await loadNegotiations(session);
   }
 
   const ownProvider = catalog.providers.find((provider) => provider.user_id === profile?.id);
@@ -256,7 +244,7 @@ export default function App() {
       {notice && <div className={`notice ${notice.error ? "notice-error" : ""}`} role="status">{notice.text}<button onClick={() => setNotice(null)}>×</button></div>}
 
       <section className="hero" id="inicio">
-        <div><p className="eyebrow">MERCADO HIPERLOCAL · CHIMOIO</p><h1>Encontre perto.<br /><em>Negocie directo.</em></h1><p className="hero-copy">Produtos e profissionais locais, com negociação segura e pagamentos apenas simulados nesta versão.</p><a className="button button-light" href="#mercado">Explorar ofertas <span>↗</span></a></div>
+        <div><p className="eyebrow">MERCADO HIPERLOCAL · CHIMOIO</p><h1>Encontre perto.<br /><em>Negocie directo.</em></h1><p className="hero-copy">Marketplace gratuito e aberto para descobrir negócios locais, publicar serviços e negociar directamente.</p><a className="button button-light" href="#mercado">Explorar ofertas <span>↗</span></a></div>
         <div className="hero-stamp"><span>19°07′ S</span><b>CHIMOIO</b><span>33°29′ E</span></div>
       </section>
 
@@ -306,9 +294,8 @@ export default function App() {
           <form className="form-grid" onSubmit={(event) => void registerProvider(event)}>
             <label>Categoria<input required value={providerForm.category} onChange={(event) => setProviderForm({ ...providerForm, category: event.target.value })} /></label>
             <label>Preço base (MT)<input required type="number" min="0" step="0.01" value={providerForm.basePrice} onChange={(event) => setProviderForm({ ...providerForm, basePrice: event.target.value })} /></label>
-            <label>Plano<select value={providerForm.subscriptionTier} onChange={(event) => setProviderForm({ ...providerForm, subscriptionTier: event.target.value })}><option value="basico">Básico · quota 2 campanhas/30 dias</option><option value="premium">Premium · quota 4 campanhas/30 dias</option></select></label>
             <label className="wide">Biografia<textarea required maxLength={2000} value={providerForm.bio} onChange={(event) => setProviderForm({ ...providerForm, bio: event.target.value })} /></label>
-            <button className="button button-dark" disabled={busy}>Criar perfil de prestador</button>
+            <button className="button button-dark" disabled={busy}>Criar perfil gratuito de prestador</button>
           </form>
         </div>}
         {ownProvider && <div className="panel">
@@ -320,19 +307,15 @@ export default function App() {
             <label className="wide">Descrição<textarea required maxLength={5000} value={serviceForm.description} onChange={(event) => setServiceForm({ ...serviceForm, description: event.target.value })} /></label>
             <button className="button button-dark" disabled={busy}>Publicar serviço</button>
           </form>
-          <form className="campaign-form" onSubmit={(event) => void createCampaign(event)}><span>Campanhas simuladas · pacote Básico · 100 MT</span><button className="button button-outline" disabled={busy}>Entrar na fila de campanhas</button></form>
-          <button className="button button-outline renew-button" disabled={busy} onClick={() => void renewSubscription()}>Renovar ciclo simulado de 30 dias</button>
         </div>}
       </section>}
 
       <section className="section negotiations" id="negociacoes">
-        <div className="section-head"><div><p className="eyebrow">MENSAGENS E ESCROW SIMULADO</p><h2>Negociações</h2><p>Propostas, aceitação e estado de escrow passam sempre pelo Express.</p></div></div>
+        <div className="section-head"><div><p className="eyebrow">MENSAGENS E PROPOSTAS</p><h2>Negociações</h2><p>Conversa e propostas passam pelo Express; não há pagamentos ou escrow na plataforma.</p></div></div>
         {!session && <p className="empty">Inicia sessão para abrir negociações.</p>}
         {negotiations.map((negotiation) => <article className="negotiation-card" key={negotiation.id}>
-          <div className="negotiation-head"><div><b>Negociação {negotiation.id.slice(0, 8)}</b><span>{negotiation.status} · escrow {negotiation.escrow_status} · {negotiation.agreed_price ? `${Number(negotiation.agreed_price).toLocaleString("pt-MZ")} MT` : "sem preço acordado"}</span></div>
-            {negotiation.status === "accepted" && negotiation.escrow_status === "inactive" && profile?.id === negotiation.client_id && <button className="button button-dark" onClick={() => void changeEscrow(negotiation.id, "fund")}>Activar escrow simulado</button>}
-            {negotiation.escrow_status === "active" && profile?.role === "prestador" && <button className="button button-outline" onClick={() => void changeEscrow(negotiation.id, "deliver")}>Registar entrega</button>}
-            {negotiation.escrow_status === "active" && profile?.id === negotiation.client_id && <><button className="button button-outline" onClick={() => void changeEscrow(negotiation.id, "dispute")}>Abrir disputa</button><button className="button button-dark" onClick={() => void changeEscrow(negotiation.id, "release")}>Confirmar conclusão</button></>}
+          <div className="negotiation-head"><div><b>Negociação {negotiation.id.slice(0, 8)}</b><span>{negotiation.status} · {negotiation.agreed_price ? `${Number(negotiation.agreed_price).toLocaleString("pt-MZ")} MT` : "sem preço acordado"}</span></div>
+            {negotiation.status === "accepted" && profile?.id === negotiation.client_id && <button className="button button-dark" onClick={() => void completeNegotiation(negotiation.id)}>Confirmar conclusão</button>}
           </div>
           <div className="messages">{negotiation.messages?.map((message) => <div className={message.sender_id === profile?.id ? "message mine" : "message"} key={message.id}><b>{message.message_type === "proposal" ? `Proposta · ${Number(message.proposal_amount).toLocaleString("pt-MZ")} MT` : "Mensagem"}</b><p>{message.content}</p>
             {message.message_type === "proposal" && message.sender_id !== profile?.id && negotiation.status === "pending" && <span><button onClick={() => void respondToProposal(negotiation.id, message.id, "accept")}>Aceitar</button><button onClick={() => void respondToProposal(negotiation.id, message.id, "reject")}>Recusar</button></span>}
@@ -351,7 +334,7 @@ export default function App() {
         <button className="link-button" onClick={() => setAuthMode(authMode === "login" ? "signup" : "login")}>{authMode === "login" ? "Ainda não tens conta? Regista-te" : "Já tens conta? Entrar"}</button>
       </div></section>}
 
-      <footer><span>CHIMOIO BOLADAS</span><span>Marketplace local · pagamentos simulados · valores em MT</span></footer>
+      <footer><span>CHIMOIO BOLADAS</span><span>Marketplace local gratuito · preços de produtos e serviços em MT</span></footer>
     </main>
   );
 }

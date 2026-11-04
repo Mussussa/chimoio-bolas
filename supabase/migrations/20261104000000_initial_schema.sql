@@ -1,11 +1,7 @@
 create extension if not exists pgcrypto with schema extensions;
 
 create type public.user_role as enum ('client', 'lojista', 'prestador', 'admin');
-create type public.subscription_tier as enum ('basico', 'premium', 'empresarial');
-create type public.campaign_target_type as enum ('store', 'product', 'service', 'custom');
-create type public.campaign_package_type as enum ('standard', 'premium', 'basico', 'destaque');
 create type public.negotiation_status as enum ('pending', 'accepted', 'rejected', 'completed');
-create type public.escrow_status as enum ('inactive', 'active', 'disputed', 'completed');
 create type public.message_type as enum ('text', 'proposal', 'system_alert');
 create type public.review_target_type as enum ('store', 'service_provider');
 
@@ -52,9 +48,6 @@ create table public.service_providers (
   category varchar(100) not null,
   bio text not null,
   base_price numeric(12,2) not null check (base_price >= 0),
-  subscription_tier public.subscription_tier not null default 'basico',
-  subscription_started_at timestamptz not null default now(),
-  subscription_expires_at timestamptz,
   verified boolean not null default false,
   platform_member boolean not null default true,
   created_at timestamptz not null default now()
@@ -72,32 +65,6 @@ create table public.services (
   created_at timestamptz not null default now()
 );
 
-create table public.ad_batches (
-  id uuid primary key default gen_random_uuid(),
-  plan_type public.campaign_package_type not null,
-  total_revenue numeric(12,2) not null default 0 check (total_revenue >= 0),
-  status varchar(30) not null default 'open',
-  published_to_web boolean not null default false,
-  published_to_meta boolean not null default false,
-  created_at timestamptz not null default now()
-);
-
-create table public.campaigns (
-  id uuid primary key default gen_random_uuid(),
-  owner_id uuid not null references public.users(id) on delete cascade,
-  target_type public.campaign_target_type not null,
-  target_id uuid,
-  package_type public.campaign_package_type not null,
-  cost numeric(12,2) not null check (cost > 0),
-  views_internal integer not null default 0 check (views_internal >= 0),
-  views_external integer not null default 0 check (views_external >= 0),
-  clicks integer not null default 0 check (clicks >= 0),
-  leads integer not null default 0 check (leads >= 0),
-  status varchar(30) not null default 'queued',
-  ad_batch_id uuid references public.ad_batches(id),
-  created_at timestamptz not null default now()
-);
-
 create table public.negotiations (
   id uuid primary key default gen_random_uuid(),
   client_id uuid not null references public.users(id),
@@ -105,7 +72,6 @@ create table public.negotiations (
   service_id uuid not null references public.services(id),
   status public.negotiation_status not null default 'pending',
   agreed_price numeric(12,2) check (agreed_price is null or agreed_price > 0),
-  escrow_status public.escrow_status not null default 'inactive',
   client_proof_file text,
   provider_proof_file text,
   created_at timestamptz not null default now()
@@ -136,22 +102,18 @@ create table public.reviews (
 create index stores_location_idx on public.stores (latitude, longitude);
 create index products_store_idx on public.products (store_id);
 create index services_public_idx on public.services (published, provider_id);
-create index campaigns_owner_date_idx on public.campaigns (owner_id, created_at);
 create index messages_negotiation_date_idx on public.messages (negotiation_id, created_at);
-create unique index ad_batches_one_open_per_plan on public.ad_batches (plan_type) where status = 'open';
 
 alter table public.users enable row level security;
 alter table public.stores enable row level security;
 alter table public.products enable row level security;
 alter table public.service_providers enable row level security;
 alter table public.services enable row level security;
-alter table public.campaigns enable row level security;
 alter table public.negotiations enable row level security;
 alter table public.messages enable row level security;
 alter table public.reviews enable row level security;
-alter table public.ad_batches enable row level security;
 
-revoke all on public.users, public.campaigns, public.negotiations, public.messages, public.reviews, public.ad_batches
+revoke all on public.users, public.negotiations, public.messages, public.reviews
   from anon, authenticated;
 revoke insert, update, delete on public.stores, public.products, public.service_providers, public.services
   from anon, authenticated;
@@ -164,14 +126,12 @@ create policy "Public can read products from verified stores" on public.products
     exists (select 1 from public.stores s where s.id = store_id and s.verified)
   );
 create policy "Public and owners can read platform providers" on public.service_providers
-  for select to anon, authenticated using (
-    (platform_member and subscription_expires_at > now()) or user_id = auth.uid()
-  );
+  for select to anon, authenticated using (platform_member or user_id = auth.uid());
 create policy "Public can read published platform services" on public.services
   for select to anon, authenticated using (
     published and internal_platform_service and exists (
       select 1 from public.service_providers p
-      where p.id = provider_id and p.platform_member and p.subscription_expires_at > now()
+      where p.id = provider_id and p.platform_member
     )
   );
 create policy "Public can read reviews" on public.reviews

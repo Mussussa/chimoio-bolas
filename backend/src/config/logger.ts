@@ -37,13 +37,8 @@ export const auditLogger = {
       amountMt?: number | null;
       from?: string;
       to?: string;
-      batchId?: string;
-      campaignId?: string;
-      campaignCostMt?: number;
-      planType?: string;
-      campaignCount?: number;
-      totalRevenueMt?: number;
-      escrowStatus?: string;
+      serviceId?: string;
+      messageType?: string;
     };
   }): void {
     logger.info("Business audit", {

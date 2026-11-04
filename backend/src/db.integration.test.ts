@@ -21,10 +21,23 @@ describe.skipIf(!enabled)("Supabase/PostgreSQL local", () => {
        from pg_tables
        where schemaname = 'public'
          and tablename in ('users', 'stores', 'products', 'service_providers', 'services',
-                           'campaigns', 'negotiations', 'messages', 'reviews', 'ad_batches')`
+                         'negotiations', 'messages', 'reviews')`
     );
     const rows = result as Array<{ tablename: string; rowsecurity: boolean }>;
-    expect(rows).toHaveLength(10);
+    expect(rows).toHaveLength(8);
     expect(rows.every((row) => row.rowsecurity)).toBe(true);
+
+    const [removedObjects] = await sequelize.query(
+      `select table_name as name
+       from information_schema.tables
+       where table_schema = 'public' and table_name in ('campaigns', 'ad_batches')
+       union all
+       select column_name as name
+       from information_schema.columns
+       where table_schema = 'public'
+         and ((table_name = 'service_providers' and column_name in ('subscription_tier', 'subscription_started_at', 'subscription_expires_at'))
+           or (table_name = 'negotiations' and column_name = 'escrow_status'))`
+    );
+    expect(removedObjects).toEqual([]);
   });
 });
