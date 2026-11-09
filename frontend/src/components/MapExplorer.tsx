@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from "react-leaflet";
 
-type Store = { id: string; name: string; category: string; address: string; latitude: number; longitude: number };
+type Store = { id: string; name: string; category: string | string[]; address: string; latitude: number | null; longitude: number | null };
 type Props = { stores: Store[]; gps: [number, number] | null };
 const chimoio: [number, number] = [-19.1164, 33.4833];
 
@@ -15,11 +15,14 @@ function Recenter({ center }: { center: [number, number] }) {
 
 export default function MapExplorer({ stores, gps }: Props) {
   const center: [number, number] = gps ?? chimoio;
-  const mappedStores = useMemo(() => stores.map((store) => ({
-    ...store,
-    latitude: Number(store.latitude),
-    longitude: Number(store.longitude)
-  })).filter((store) => Number.isFinite(store.latitude) && Number.isFinite(store.longitude)), [stores]);
+  const mappedStores = useMemo(() => stores
+    .filter((store) => store.latitude !== null && store.longitude !== null)
+    .map((store) => ({
+      ...store,
+      latitude: Number(store.latitude),
+      longitude: Number(store.longitude)
+    }))
+    .filter((store) => Number.isFinite(store.latitude) && Number.isFinite(store.longitude)), [stores]);
 
   return (
     <div className="map-frame" aria-label="Mapa de lojas de Chimoio">
@@ -37,7 +40,7 @@ export default function MapExplorer({ stores, gps }: Props) {
           center={[store.latitude, store.longitude]}
           radius={9}
           pathOptions={{ color: "#fff", fillColor: "#df8150", fillOpacity: 1 }}
-        ><Popup><b>{store.name}</b><br />{store.category}<br />{store.address}</Popup></CircleMarker>)}
+        ><Popup><b>{store.name}</b><br />{Array.isArray(store.category) ? store.category.join(" · ") : store.category}<br />{store.address}</Popup></CircleMarker>)}
       </MapContainer>
     </div>
   );

@@ -1,12 +1,34 @@
 import request from "supertest";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { app } from "./app.js";
+import { sequelize } from "./config/database.js";
 
 describe("API Express", () => {
-  it("expõe healthcheck sem credenciais", async () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("confirma no healthcheck a ligação à base de dados", async () => {
+    vi.spyOn(sequelize, "authenticate").mockResolvedValue(undefined);
     const response = await request(app).get("/api/health");
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({ success: true, message: "API operacional.", data: { ok: true } });
+    expect(response.body).toEqual({
+      success: true,
+      message: "API e base de dados operacionais.",
+      data: { api: "online", database: "connected" }
+    });
+    expect(sequelize.authenticate).toHaveBeenCalledOnce();
+  });
+
+  it("não informa sucesso quando a base de dados está indisponível", async () => {
+    vi.spyOn(sequelize, "authenticate").mockRejectedValue(new Error("connection refused"));
+    const response = await request(app).get("/api/health");
+    expect(response.status).toBe(503);
+    expect(response.body).toEqual({
+      success: false,
+      message: "A base de dados está indisponível.",
+      error_code: "SERVICE_UNAVAILABLE"
+    });
   });
 
   it("recusa publicar serviços sem sessão autenticada", async () => {

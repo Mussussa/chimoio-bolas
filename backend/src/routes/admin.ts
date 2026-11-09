@@ -6,6 +6,7 @@ import { requestSchemas } from "../validation/schemas.js";
 
 export const adminRouter = Router();
 
+// Permite ao administrador verificar uma loja registada na plataforma.
 adminRouter.post(
   "/stores/:id/verify",
   authenticate,

@@ -6,4 +6,5 @@ import { requestSchemas } from "../validation/schemas.js";
 
 export const reviewsRouter = Router();
 
+// Regista uma avaliação de loja ou prestador feita por um cliente autenticado.
 reviewsRouter.post("/", authenticate, requireRole("client"), validateRequest(requestSchemas.createReview), createReview);

@@ -37,7 +37,7 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
         id: data.user.id,
         name: String(data.user.user_metadata.name ?? email.split("@")[0]),
         email,
-        phone: null,
+        phone: String(data.user.user_metadata.phone ?? "").trim() || null,
         role: "client",
         avatarUrl: null
       }

@@ -6,5 +6,7 @@ import { requestSchemas } from "../validation/schemas.js";
 
 export const profileRouter = Router();
 
+// Devolve os dados do perfil do utilizador autenticado.
 profileRouter.get("/me", authenticate, getProfile);
+// Actualiza o nome e o telefone do utilizador autenticado.
 profileRouter.patch("/me", authenticate, validateRequest(requestSchemas.updateProfile), updateProfile);

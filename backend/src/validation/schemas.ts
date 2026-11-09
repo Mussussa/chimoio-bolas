@@ -21,6 +21,7 @@ export const validationMessages = {
   "any.only": "{#label} tem um valor inválido.",
   "array.base": "{#label} deve ser uma lista.",
   "array.max": "{#label} não pode ter mais de {#limit} itens.",
+  "array.min": "{#label} deve ter pelo menos {#limit} item.",
   "number.base": "{#label} deve ser um número válido.",
   "number.currency": "{#label} deve ser um valor monetário válido em MT.",
   "number.greater": "{#label} deve ser maior que {#limit}.",
@@ -38,30 +39,62 @@ export const validationMessages = {
   "string.pattern.base": "{#label} tem um formato inválido."
 };
 
+// Listas oficiais permitidas para validação múltipla
+const STORE_CATEGORIES_LIST = [
+  "Imóveis", "Eletrónicos", "Automóveis", "Agricultura",
+  "Materiais de Construção", "Moda & Vestuário", "Alimentação & Bebidas",
+  "Saúde & Beleza", "Casa & Decoração", "Diversos"
+];
+
+const SERVICE_CATEGORIES_LIST = [
+  "Construção", "Eletricidade", "Hidráulica", "Carpintaria & Serralharia",
+  "Transporte & Logística", "Hotelaria & Restauração", "Tecnologia & Informática",
+  "Beleza & Estética", "Limpeza & Jardinagem", "Diversos"
+];
+
 export const requestSchemas = {
   registerStore: Joi.object({
     name: requiredText("O nome da loja", 160),
     slug: Joi.string().trim().pattern(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(180).required().label("O identificador da loja"),
-    category: requiredText("A categoria", 100),
+    category: Joi.array()
+      .items(Joi.string().valid(...STORE_CATEGORIES_LIST))
+      .min(1)
+      .required()
+      .label("As categorias da loja"),
     description: requiredText("A descrição", 4000),
     address: requiredText("O endereço", 500),
-    latitude: Joi.number().min(-90).max(90).required().label("A latitude"),
-    longitude: Joi.number().min(-180).max(180).required().label("A longitude")
+    neighborhood: Joi.string().trim().allow("").optional().label("O bairro"),
+    latitude: Joi.number().min(-19.35).max(-18.85).allow(null, "").optional().messages({
+      "number.min": "A latitude está fora dos limites da área de Chimoio.",
+      "number.max": "A latitude está fora dos limites da área de Chimoio."
+    }).label("A latitude"),
+    longitude: Joi.number().min(33.20).max(33.80).allow(null, "").optional().messages({
+      "number.min": "A longitude está fora dos limites da área de Chimoio.",
+      "number.max": "A longitude está fora dos limites da área de Chimoio."
+    }).label("A longitude")
   }),
-  createProduct: Joi.object({
+createProduct: Joi.object({
     name: requiredText("O nome do produto", 160),
     description: requiredText("A descrição", 4000),
     price: catalogPrice("O preço"),
-    category: requiredText("A categoria", 100),
+    category: Joi.string().valid(...STORE_CATEGORIES_LIST).required().label("A categoria"),
     variants: Joi.array().default([]).label("As variantes"),
-    images: Joi.array().items(Joi.string().max(2000).label("O endereço da imagem")).max(12).default([]).label("As imagens"),
+    images: Joi.array().items(Joi.string().max(2000).label("O endereço da imagem")).max(12).default([]).label("As imagens").required().messages({
+      "array.max": "Não pode enviar mais de {#limit} imagens.",
+      "array.base": "As imagens devem ser enviadas como uma lista.",
+      "array.required": "As imagens devem ser enviadas como uma lista."
+    }),
     minOrderQty: Joi.number().integer().min(1).max(100_000).default(1).label("A quantidade mínima")
   }),
   updateProductPrice: Joi.object({
     price: catalogPrice("O preço", 1_000_000_000)
   }),
   registerProvider: Joi.object({
-    category: requiredText("A categoria", 100),
+    category: Joi.array()
+      .items(Joi.string().valid(...SERVICE_CATEGORIES_LIST))
+      .min(1)
+      .required()
+      .label("As áreas de atuação"),
     bio: requiredText("A biografia", 2000),
     basePrice: price("O preço base")
   }),

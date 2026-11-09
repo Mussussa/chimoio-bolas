@@ -1,15 +1,24 @@
 import "dotenv/config";
 import { Sequelize } from "sequelize";
 
-const databaseUrl = process.env.DATABASE_URL;
-
-export function assertDatabaseUrl(): void {
-  if (!databaseUrl) throw new Error("DATABASE_URL tem de apontar para o PostgreSQL local.");
+function requireDatabaseUrl(): string {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL não está configurada com a ligação PostgreSQL do projecto Supabase.");
+  }
+  return databaseUrl;
 }
 
-export const sequelize = new Sequelize(databaseUrl ?? "postgres://missing:missing@127.0.0.1:5432/missing", {
+export function assertDatabaseUrl(): void {
+  requireDatabaseUrl();
+}
+
+const databaseUrl = requireDatabaseUrl();
+const databaseOptions = {
   dialect: "postgres",
   logging: process.env.NODE_ENV === "development" ? console.log : false,
   pool: { max: 5, min: 0, acquire: 30_000, idle: 10_000 },
   dialectOptions: process.env.DATABASE_SSL === "true" ? { ssl: { require: true, rejectUnauthorized: false } } : {}
-});
+} as const;
+
+export const sequelize = new Sequelize(databaseUrl, databaseOptions);

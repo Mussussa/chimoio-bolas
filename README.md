@@ -6,7 +6,7 @@ Marketplace local, gratuito e aberto de produtos e serviços em Chimoio. O códi
 
 - **Leituras públicas:** o navegador usa `@supabase/supabase-js` para consultar lojas, produtos, prestadores e serviços directamente; coordenadas e marcadores do mapa vêm das mesmas leituras. A migration também disponibiliza a view segura `public_reviews`. As políticas RLS limitam as listagens a dados elegíveis; o frontend nunca recebe a chave `service_role`.
 - **Escritas críticas:** Express autentica o JWT Supabase e obtém a função do utilizador na tabela `users`. Criação/publicação de serviços, mensagens, propostas e conclusão de negociação são executados exclusivamente no backend.
-- **Persistência:** Sequelize liga-se directamente ao PostgreSQL local do Supabase. A migration SQL cria o esquema, índices, enumerações, checks e políticas RLS. Não usar `sequelize.sync()` para alterar o esquema.
+- **Persistência:** Sequelize liga-se directamente ao PostgreSQL do mesmo projecto Supabase usado pelo frontend. No arranque, `sequelize.sync()` cria as tabelas em falta e o backend configura RLS, políticas de leitura pública e a view segura `public_reviews`. O sync não altera tabelas existentes; para evoluir um esquema já criado, actualiza os modelos e aplica a alteração apropriada sem usar `force` ou `alter` em produção.
 - **Campos sensíveis:** `users.phone`, `negotiations.client_proof_file` e `negotiations.provider_proof_file` são cifrados com AES-256-GCM no hook `beforeValidate` e decifrados no backend após leitura. A chave de 32 bytes é configurada fora do repositório.
 
 ```text
@@ -61,13 +61,44 @@ supabase/
 | `POST /api/negotiations/:id/complete` | O cliente confirma a conclusão de uma negociação aceite, sem pagamento ou escrow. |
 | `POST /api/admin/stores/:id/verify` | Verificação administrativa de lojas. |
 
-Para criar o primeiro administrador local, cria uma conta pela interface, inicia sessão uma vez e actualiza manualmente a role dessa conta no SQL Editor do Supabase:
+Para criar o primeiro administrador, cria uma conta pela interface, inicia sessão uma vez e actualiza manualmente a role dessa conta no SQL Editor do projecto Supabase:
 
 ```sql
 update public.users set role = 'admin' where email = 'admin@example.local';
 ```
 
-## Executar localmente
+## Usar o projecto Supabase na nuvem
+
+O frontend e o backend têm de apontar para o mesmo projecto Supabase. O frontend consulta o catálogo e usa Supabase Auth; o backend usa o mesmo Auth para validar sessões e liga o Sequelize ao PostgreSQL desse projecto.
+
+1. Confirma que `VITE_SUPABASE_URL` no `frontend/.env` e `SUPABASE_URL` no `backend/.env` são o URL do mesmo projecto. Usa a chave `anon`/publishable nos dois clientes; nunca coloques a chave `service_role` no frontend.
+2. No Supabase, o backend cria as tabelas em falta pelo `sequelize.sync()` ao arrancar. Também podes criar o esquema antes do primeiro arranque com as migrations versionadas:
+
+   ```sh
+   npx supabase login
+   npx supabase link --project-ref [PROJECT-REF]
+   npx supabase db push
+   ```
+
+   As migrations criam as tabelas e RLS. A segunda migration remove tabelas/campos comerciais antigos; faz backup antes de aplicá-la se o projecto remoto já tiver dados que precises. `sequelize.sync()` continua seguro após as migrations: cria apenas tabelas em falta, sem `force` nem `alter`, e o backend actualiza as políticas RLS no arranque.
+3. Em **Supabase > Project Settings > Database**, copia a connection string PostgreSQL do projecto. Usa a string do Session Pooler se a ligação directa não estiver disponível e preenche `DATABASE_URL` no `backend/.env`. Define também `DATABASE_SSL=true`; essa ligação é usada apenas pelo servidor e nunca deve ser exposta ao frontend.
+4. Preenche as variáveis nos ficheiros `backend/.env` e `frontend/.env`. Se algum não existir, cria-o com os nomes de variáveis necessários; deixa vazias as variáveis para as quais ainda não tens valor. A `DATABASE_URL` tem de ser a connection string real do PostgreSQL Supabase; gera também a chave de cifragem:
+
+   ```sh
+   openssl rand -base64 32
+   ```
+
+   Usa o mesmo projecto nos dois URLs Supabase. Coloca a connection string PostgreSQL e `DATABASE_SSL=true` somente em `backend/.env`, tal como o resultado do OpenSSL em `FIELD_ENCRYPTION_KEY`. Não partilhes nem commits estes ficheiros.
+5. Arranca o backend e o frontend. O banco, Auth e leituras públicas passam pelo projecto Supabase escolhido:
+
+   ```sh
+   cd backend && npm install && npm run dev
+   cd frontend && npm install && npm run dev
+   ```
+
+   Frontend: `http://localhost:5173`; API: `http://localhost:3001`. `GET /api/health` testa a ligação ao PostgreSQL em cada pedido e devolve HTTP 503 se a base estiver indisponível. O backend só inicia após uma ligação PostgreSQL bem-sucedida.
+
+## Executar localmente com Supabase CLI
 
 Requisitos: Node.js 22.12+, npm, Docker e Supabase CLI.
 
@@ -81,15 +112,7 @@ Requisitos: Node.js 22.12+, npm, Docker e Supabase CLI.
 
    As migrations criam o esquema aberto. `db reset` recria a base local; a migration `20261104120000_free_open_marketplace.sql` remove campanhas/lotes, colunas de subscrição e estado de escrow da versão anterior. Em bases existentes, exporta/guarda os dados de campanhas que precises antes de aplicar essa migration, pois esses dados são apagados. Guarda a URL e a chave `anon` mostradas por `supabase status`; nunca uses a `service_role` no frontend.
 
-2. Cria as configurações ignoradas pelo Git:
-
-   ```sh
-   cp backend/.env.example backend/.env
-   cp frontend/.env.example frontend/.env.local
-   openssl rand -base64 32
-   ```
-
-   Coloca o resultado de `openssl` em `FIELD_ENCRYPTION_KEY` no `backend/.env`; preenche `SUPABASE_ANON_KEY` e `VITE_SUPABASE_ANON_KEY` com a chave pública `anon`. A ligação local padrão do Sequelize é `postgresql://postgres:postgres@127.0.0.1:54322/postgres`.
+2. Preenche as variáveis nos ficheiros locais `backend/.env` e `frontend/.env`, deixando vazias as que não tiveres. Gera `FIELD_ENCRYPTION_KEY` com `openssl rand -base64 32`. Usa `http://127.0.0.1:54321` nos URLs, a chave `anon` local e `postgresql://postgres:postgres@127.0.0.1:54322/postgres` em `DATABASE_URL`; define `DATABASE_SSL=false`.
 
 3. Instala e arranca, em terminais separados:
 
