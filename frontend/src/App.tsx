@@ -33,12 +33,14 @@ import type {
   StoreForm
 } from "./lib/types";
 
-const emptyCatalog: Catalog = { stores: [], products: [], providers: [], services: [] };
+const emptyCatalog: Catalog = { stores: [], mapStores: [], products: [], providers: [], services: [] };
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [catalog, setCatalog] = useState<Catalog>(emptyCatalog);
+  const [catalogStatus, setCatalogStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [catalogError, setCatalogError] = useState<string | null>(null);
   const [negotiations, setNegotiations] = useState<Negotiation[]>([]);
   const [notice, setNotice] = useState<Notice>(null);
   const [busy, setBusy] = useState(false);
@@ -56,10 +58,16 @@ export default function App() {
   const [messageForm, setMessageForm] = useState<MessageForm>({ content: "", proposalAmount: "" });
 
   const loadCatalog = useCallback(async () => {
+    setCatalogStatus("loading");
+    setCatalogError(null);
     try {
       setCatalog(await fetchCatalog());
+      setCatalogStatus("ready");
     } catch (error) {
-      setNotice({ text: (error as Error).message, error: true });
+      const message = (error as Error).message;
+      setCatalogError(message);
+      setCatalogStatus("error");
+      setNotice({ text: message, error: true });
     }
   }, []);
 
@@ -173,14 +181,29 @@ async function submitAuth(event: FormEvent<HTMLFormElement>) {
     }
   }
 
-  async function registerStore(event: FormEvent<HTMLFormElement>) {
+async function registerStore(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const result = await runApi((currentSession) => registerStoreRequest(currentSession, storeForm));
     if (result) {
       setProfile((current) => current
-        ? { ...current, role: "lojista", store: { category: storeForm.category } }
+        ? { 
+            ...current, 
+            role: "lojista", 
+            store: { 
+              id: (result as any).id || "",
+              name: storeForm.name,
+              slug: storeForm.slug,
+              category: storeForm.category,
+              description: storeForm.description,
+              address: storeForm.address,
+              latitude: storeForm.latitude ? Number(storeForm.latitude) : null,
+              longitude: storeForm.longitude ? Number(storeForm.longitude) : null,
+              verified: false
+            } 
+          } 
         : current);
       setNotice({ text: "Loja criada. Um administrador deve verificá-la antes da listagem pública." });
+      await loadCatalog(); // Atualiza também o catálogo geral para a loja aparecer no mapa se necessário
     }
   }
 
@@ -240,7 +263,8 @@ async function submitAuth(event: FormEvent<HTMLFormElement>) {
     if (!navigator.geolocation) return setNotice({ text: "GPS não está disponível neste dispositivo.", error: true });
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => { setCoordinates([coords.latitude, coords.longitude]); setNearby(true); },
-      () => setNotice({ text: "Não foi possível obter a localização. Verifica a permissão de GPS.", error: true })
+      () => setNotice({ text: "Não foi possível obter a localização. Verifica a permissão de GPS.", error: true }),
+      { enableHighAccuracy: true, maximumAge: 60_000, timeout: 10_000 }
     );
   }
 
@@ -258,6 +282,7 @@ async function submitAuth(event: FormEvent<HTMLFormElement>) {
       <Hero />
       <Marketplace
         stores={catalog.stores}
+        mapStores={catalog.mapStores}
         products={visibleProducts}
         services={visibleServices}
         providers={catalog.providers}
@@ -266,6 +291,8 @@ async function submitAuth(event: FormEvent<HTMLFormElement>) {
         search={search}
         nearby={nearby}
         coordinates={coordinates}
+        mapLoading={catalogStatus === "loading"}
+        mapError={catalogStatus === "error" ? catalogError : null}
         priceDrafts={priceDrafts}
         onSearchChange={setSearch}
         onLocate={locate}

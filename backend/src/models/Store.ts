@@ -31,6 +31,7 @@ export class Store extends Model<InferAttributes<Store>, InferCreationAttributes
   declare address: string;
   declare latitude: number | null;
   declare longitude: number | null;
+  declare logoUrl: string | null; // Novo campo para a fotografia de perfil / logótipo da loja
   declare verified: CreationOptional<boolean>;
   declare createdAt: CreationOptional<Date>;
 }
@@ -50,9 +51,8 @@ export function initializeStoreModel(sequelize: Sequelize): void {
     address: { type: DataTypes.TEXT, allowNull: false },
     latitude: { type: DataTypes.DECIMAL(10, 7), allowNull: true },
     longitude: { type: DataTypes.DECIMAL(10, 7), allowNull: true },
+    logoUrl: { type: DataTypes.STRING(1000), allowNull: true, field: "logo_url" }, // Coluna na base de dados (snake_case)
     verified: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
     createdAt: { type: DataTypes.DATE, field: "created_at" }
   }, modelOptions(sequelize, "stores"));
 }
-
-//backend/src/models/Store.ts

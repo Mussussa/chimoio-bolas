@@ -73,8 +73,17 @@ input:focus, textarea:focus, select:focus { border-color: #4a8fba; box-shadow: 0
 .geo-note { padding: 10px 12px; color: #2e715d; background: #eaf5ef; border-radius: 7px; font-size: 12px; }
 .geo-note button, .messages button, .link-button { border: 0; color: var(--blue); background: none; font-weight: 700; }
 .empty { grid-column: 1/-1; padding: 24px; color: var(--muted); border: 1px dashed #cbd8de; border-radius: 10px; text-align: center; font-size: 13px; }
-.map-frame { height: 360px; overflow: hidden; margin: 18px 0 24px; border: 1px solid var(--line); border-radius: 12px; background: #e6edf0; }
+.map-summary { margin: 0; color: var(--muted); font-size: 12px; }
+.map-frame { height: 360px; overflow: hidden; margin: 10px 0 12px; border: 1px solid var(--line); border-radius: 12px; background: #e6edf0; }
 .leaflet-map { width: 100%; height: 100%; }
+.map-popup { display: grid; gap: 12px; min-width: 180px; }
+.map-popup-store { display: grid; gap: 5px; }
+.map-popup-store + .map-popup-store { padding-top: 10px; border-top: 1px solid var(--line); }
+.map-popup-store > b { color: var(--navy); font-size: 14px; }
+.map-popup-store > span { color: var(--muted); font-size: 12px; }
+.map-popup-store > .map-popup-category { color: #b65f36; font-weight: 700; }
+.map-popup-store > a { color: var(--blue); font-size: 12px; font-weight: 700; }
+.map-empty { margin: 0 0 24px; padding: 12px; color: var(--muted); background: #f5f9fb; border-radius: 7px; font-size: 12px; }
 .price-editor { display: flex; gap: 8px; margin-top: 12px; }
 .renew-button { margin-top: 12px; }
 .workspace { padding-top: 0; display: grid; gap: 18px; }

@@ -10,3 +10,4 @@ export const profileRouter = Router();
 profileRouter.get("/me", authenticate, getProfile);
 // Actualiza o nome e o telefone do utilizador autenticado.
 profileRouter.patch("/me", authenticate, validateRequest(requestSchemas.updateProfile), updateProfile);
+``

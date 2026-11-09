@@ -31,6 +31,9 @@ const schemaSetupStatements = [
   `create policy "Participants read negotiation messages" on public.messages for select to authenticated using (exists (select 1 from public.negotiations n left join public.service_providers p on p.id = n.provider_id where n.id = negotiation_id and (n.client_id = auth.uid() or p.user_id = auth.uid())))`,
   `create or replace view public.public_reviews as select target_type, target_id, rating, comment, created_at from public.reviews`,
   `grant select on public.public_reviews to anon, authenticated`,
+  `create or replace view public.map_stores as select id, name, category, address, latitude, longitude, verified from public.stores`,
+  `revoke all on public.map_stores from public, anon, authenticated`,
+  `grant select on public.map_stores to anon, authenticated`,
   `notify pgrst, 'reload schema'`
 ];
 

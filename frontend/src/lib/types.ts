@@ -20,6 +20,11 @@ export type Store = {
   verified: boolean;
 };
 
+export type MapStore = Pick<Store, "id" | "name" | "category" | "address" | "verified"> & {
+  latitude: number | string | null;
+  longitude: number | string | null;
+};
+
 export type Product = {
   id: string;
   store_id: string;
@@ -67,6 +72,7 @@ export type Negotiation = {
 
 export type Catalog = {
   stores: Store[];
+  mapStores: MapStore[];
   products: Product[];
   providers: ServiceProvider[];
   services: Service[];

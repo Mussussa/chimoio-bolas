@@ -1,7 +1,9 @@
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
+import { loadAllMapStores } from "./mapStores";
 import type {
   Catalog,
+  MapStore,
   Negotiation,
   Product,
   ProductForm,
@@ -19,21 +21,31 @@ export async function loadCatalog(): Promise<Catalog> {
   if (!supabase) {
     throw new Error("Configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no frontend/.env.local.");
   }
+  const client = supabase;
 
-  const [stores, products, providers, services] = await Promise.all([
-    supabase.from("stores").select("*").order("created_at", { ascending: false }),
-    supabase.from("products").select("*").order("created_at", { ascending: false }),
-    supabase.from("service_providers").select("*").order("created_at", { ascending: false }),
-    supabase.from("services").select("*").eq("published", true).order("created_at", { ascending: false })
+  const [storeResults, productResults, providerResults, serviceResults, mapStores] = await Promise.all([
+    client.from("stores").select("*").order("created_at", { ascending: false }),
+    client.from("products").select("*").order("created_at", { ascending: false }),
+    client.from("service_providers").select("*").order("created_at", { ascending: false }),
+    client.from("services").select("*").eq("published", true).order("created_at", { ascending: false }),
+    loadAllMapStores(async (offset, limit) => {
+      const result = await client
+        .from("map_stores")
+        .select("id,name,category,address,latitude,longitude,verified")
+        .order("id", { ascending: true })
+        .range(offset, offset + limit - 1);
+      return { data: result.data as MapStore[] | null, error: result.error };
+    })
   ]);
-  const failed = [stores, products, providers, services].find((result) => result.error);
+  const failed = [storeResults, productResults, providerResults, serviceResults].find((result) => result.error);
   if (failed?.error) throw failed.error;
 
   return {
-    stores: (stores.data ?? []) as Store[],
-    products: (products.data ?? []) as Product[],
-    providers: (providers.data ?? []) as ServiceProvider[],
-    services: (services.data ?? []) as Service[]
+    stores: (storeResults.data ?? []) as Store[],
+    mapStores,
+    products: (productResults.data ?? []) as Product[],
+    providers: (providerResults.data ?? []) as ServiceProvider[],
+    services: (serviceResults.data ?? []) as Service[]
   };
 }
 
