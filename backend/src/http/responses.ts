@@ -1,6 +1,6 @@
 import type { Response } from "express";
 
-export function sendSuccess<T extends Record<string, unknown>>(
+export function sendSuccess<T extends Record<string, unknown> | null>(
   res: Response,
   data: T,
   status = 200,

@@ -9,8 +9,8 @@ export const registerStore: RequestHandler = async (req, res, next) => {
       return sendError(res, 403, "Esta conta não pode registar uma loja.");
     }
     
-    // category é agora um array de strings e latitude/longitude são opcionais
-    const { name, slug, category, description, address, latitude, longitude } = req.body as {
+    // Incluímos o logoUrl (ou logo) no corpo do pedido
+    const { name, slug, category, description, address, latitude, longitude, logoUrl } = req.body as {
       name: string; 
       slug: string; 
       category: string[]; 
@@ -18,6 +18,7 @@ export const registerStore: RequestHandler = async (req, res, next) => {
       address: string; 
       latitude?: number | null | string; 
       longitude?: number | null | string;
+      logoUrl?: string | null;
     };
 
     const lat = latitude !== undefined && latitude !== null && latitude !== "" ? Number(latitude) : null;
@@ -30,21 +31,22 @@ export const registerStore: RequestHandler = async (req, res, next) => {
     const store = await Store.sequelize!.transaction(async (transaction) => {
       user.role = "lojista";
       await user.save({ transaction });
-      return Store.create({
+return Store.create({
         ownerId: user.id,
         name: name.trim(),
         slug,
-        category, // Array de categorias selecionadas
+        category: category as Array<"Imóveis" | "Eletrónicos" | "Automóveis" | "Agricultura" | "Materiais de Construção" | "Moda & Vestuário" | "Alimentação & Bebidas" | "Saúde & Beleza" | "Casa & Decoração" | "Diversos">,
         description: description.trim(),
         address: address.trim(),
         latitude: lat,
         longitude: lng,
+        logoUrl: logoUrl?.trim() || null,
         verified: false
       }, { transaction });
     });
 
     return sendSuccess(res, { store, notice: "Loja criada e aguarda verificação administrativa." }, 201, "Loja registada.");
-  } catch (error) {
+  } catch (error)  {
     next(error);
   }
 };

@@ -16,7 +16,7 @@ type WorkspaceProps = Readonly<{
   setStoreForm: Dispatch<SetStateAction<any>>;
   setProductForm: Dispatch<SetStateAction<ProductForm>>;
   registerStore: (event: FormEvent<HTMLFormElement>) => void;
-  createProduct: (event: FormEvent<HTMLFormElement>) => void;
+  createProduct: (event: FormEvent<HTMLFormElement>, product?: ProductForm & { images?: string[] }) => void;
   registerProvider: (event: FormEvent<HTMLFormElement>) => void;
   publishService: (event: FormEvent<HTMLFormElement>) => void;
 }>;
@@ -161,7 +161,7 @@ export default function Workspace({
       setProductForm(finalPayload);
 
       // 4. Submete para o backend
-      createProduct(event);
+      createProduct(event, finalPayload);
       
       setProductImageFile(null);
     } catch (error) {

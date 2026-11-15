@@ -145,5 +145,30 @@ createProduct: Joi.object({
   proposalParams: Joi.object({
     id: uuid("O identificador da negociação"),
     messageId: uuid("O identificador da proposta")
-  })
+  }),
+  updateStore: Joi.object({
+    name: requiredText("O nome da loja", 160),
+    slug: Joi.string().trim().pattern(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(180).required().label("O identificador da loja"),
+    category: Joi.array()
+      .items(Joi.string().valid(...STORE_CATEGORIES_LIST))
+      .min(1)
+      .required()
+      .label("As categorias da loja"),
+    description: requiredText("A descrição", 4000),
+    address: requiredText("O endereço", 500),
+    neighborhood: Joi.string().trim().allow("").optional().label("O bairro"),
+    latitude: Joi.number().min(-19.35).max(-18.85).allow(null, "").optional().label("A latitude"),
+    longitude: Joi.number().min(33.20).max(33.80).allow(null, "").optional().label("A longitude"),
+    logoUrl: Joi.string().max(1000).allow(null, "").optional().label("O logótipo da loja")
+  }),
+
+  updateProduct: Joi.object({
+    name: requiredText("O nome do produto", 160),
+    description: requiredText("A descrição", 4000),
+    price: catalogPrice("O preço"),
+    category: Joi.string().valid(...STORE_CATEGORIES_LIST).required().label("A categoria"),
+    images: Joi.array().items(Joi.string().max(2000).label("O endereço da imagem")).max(12).default([]).label("As imagens").required(),
+    minOrderQty: Joi.number().integer().min(1).max(100_000).default(1).label("A quantidade mínima")
+  }),
+  
 };

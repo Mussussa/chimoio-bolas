@@ -59,6 +59,66 @@ export async function loadProfile(session: Session): Promise<Profile> {
   };
 }
 
+export type MerchantStore = {
+  id: string;
+  ownerId: string;
+  name: string;
+  slug: string;
+  category: string[];
+  description: string;
+  address: string;
+  latitude: number | string | null;
+  longitude: number | string | null;
+  logoUrl: string | null;
+  verified: boolean;
+};
+
+export type MerchantProduct = {
+  id: string;
+  storeId: string;
+  name: string;
+  description: string;
+  price: string;
+  category: string;
+  images: string[];
+  minOrderQty: number;
+};
+
+export async function loadMerchantStore(session: Session): Promise<MerchantStore> {
+  const result = await api<{ store: Omit<MerchantStore, "category"> & { category: unknown } }>("/merchant/store/me", session);
+  return { ...result.store, category: normalizeStoreCategories(result.store.category) };
+}
+
+export async function updateMerchantStore(session: Session, store: Omit<MerchantStore, "id" | "ownerId" | "verified">) {
+  const result = await api<{
+    store: Omit<MerchantStore, "category"> & { category: unknown };
+  }>("/merchant/store/me", session, { method: "PUT", body: store });
+  return { ...result, store: { ...result.store, category: normalizeStoreCategories(result.store.category) } };
+}
+
+export async function loadMerchantProducts(session: Session): Promise<MerchantProduct[]> {
+  const result = await api<{ products: MerchantProduct[] }>("/merchant/products/me", session);
+  return result.products;
+}
+
+export function updateMerchantProduct(session: Session, product: MerchantProduct) {
+  return api<{ product: MerchantProduct }>(`/merchant/products/${encodeURIComponent(product.id)}`, session, {
+    method: "PUT",
+    body: {
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      category: product.category,
+      images: product.images,
+      minOrderQty: product.minOrderQty
+    }
+  });
+}
+
+export function deleteMerchantProduct(session: Session, productId: string) {
+  return api<null>(`/merchant/products/${encodeURIComponent(productId)}`, session, { method: "DELETE" });
+}
+
 function normalizeStoreCategories(category: unknown): string[] {
   if (Array.isArray(category)) {
     return category.filter((item): item is string => typeof item === "string");

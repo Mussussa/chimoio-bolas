@@ -15,7 +15,7 @@ app.use(requestLogger);
 app.use(cors({
   origin: process.env.FRONTEND_ORIGIN ?? "http://localhost:5173",
   allowedHeaders: ["authorization", "content-type"],
-  methods: ["GET", "POST", "PATCH", "OPTIONS"]
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
 }));
 app.use(express.json({ limit: "1mb" }));
 

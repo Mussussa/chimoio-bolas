@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { adminRouter } from "./admin.js";
+import { merchantRouter } from "./merchant.js";
 import { negotiationsRouter } from "./negotiations.js";
 import { profileRouter } from "./profile.js";
 import { reviewsRouter } from "./reviews.js";
@@ -14,6 +15,8 @@ apiRouter.use("/profile", profileRouter);
 apiRouter.use(servicesRouter);
 // Agrupa o registo de lojas e a gestão de produtos.
 apiRouter.use(storesRouter);
+// Agrupa as operações administrativas e de gestão do painel do lojista autenticado.
+apiRouter.use("/merchant", merchantRouter);
 // Agrupa o ciclo de vida das negociações.
 apiRouter.use("/negotiations", negotiationsRouter);
 // Agrupa os endpoints de avaliações.

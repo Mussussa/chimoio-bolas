@@ -5,6 +5,7 @@ import Marketplace from "./components/Marketplace";
 import Negotiations from "./components/Negotiations";
 import { Hero, NoticeBanner, SiteFooter, SiteHeader } from "./components/SiteChrome";
 import Workspace from "./components/Workspace";
+import MerchantDashboard from "./pages/MerchantDashboard";
 import {
   completeNegotiation as completeNegotiationRequest,
   createProduct as createProductRequest,
@@ -207,9 +208,9 @@ async function registerStore(event: FormEvent<HTMLFormElement>) {
     }
   }
 
-  async function createProduct(event: FormEvent<HTMLFormElement>) {
+  async function createProduct(event: FormEvent<HTMLFormElement>, submittedProduct = productForm) {
     event.preventDefault();
-    const result = await runApi((currentSession) => createProductRequest(currentSession, productForm));
+    const result = await runApi((currentSession) => createProductRequest(currentSession, submittedProduct));
     if (result) {
       setProductForm({ name: "", description: "", price: "", category: "" });
       await loadCatalog();
@@ -274,13 +275,32 @@ async function registerStore(event: FormEvent<HTMLFormElement>) {
   }
 
   const ownProvider = catalog.providers.some((provider) => provider.user_id === profile?.id);
+  const isMerchant = profile?.role === "lojista";
+  const workspace = profile && <Workspace
+    profile={profile}
+    ownProvider={Boolean(ownProvider)}
+    busy={busy}
+    providerForm={providerForm}
+    serviceForm={serviceForm}
+    storeForm={storeForm}
+    productForm={productForm}
+    setProviderForm={setProviderForm}
+    setServiceForm={setServiceForm}
+    setStoreForm={setStoreForm}
+    setProductForm={setProductForm}
+    registerStore={registerStore}
+    createProduct={createProduct}
+    registerProvider={registerProvider}
+    publishService={publishService}
+  />;
 
   return (
     <main className="app-shell">
       <NoticeBanner notice={notice} onDismiss={() => setNotice(null)} />
       <SiteHeader profile={profile} onSignOut={() => void signOut()} />
-      <Hero />
-      <Marketplace
+      {!isMerchant && <>
+        <Hero />
+        <Marketplace
         stores={catalog.stores}
         mapStores={catalog.mapStores}
         products={visibleProducts}
@@ -300,25 +320,8 @@ async function registerStore(event: FormEvent<HTMLFormElement>) {
         onPriceChange={(productId, value) => setPriceDrafts((current) => ({ ...current, [productId]: value }))}
         onUpdatePrice={(productId) => void updateProductPrice(productId)}
         onStartNegotiation={(serviceId) => void startNegotiation(serviceId)}
-      />
-      {profile && <Workspace
-        profile={profile}
-        ownProvider={Boolean(ownProvider)}
-        busy={busy}
-        providerForm={providerForm}
-        serviceForm={serviceForm}
-        storeForm={storeForm}
-        productForm={productForm}
-        setProviderForm={setProviderForm}
-        setServiceForm={setServiceForm}
-        setStoreForm={setStoreForm}
-        setProductForm={setProductForm}
-        registerStore={registerStore}
-        createProduct={createProduct}
-        registerProvider={registerProvider}
-        publishService={publishService}
-      />}
-      <Negotiations
+        />
+        <Negotiations
         negotiations={negotiations}
         sessionExists={Boolean(session)}
         profile={profile}
@@ -329,7 +332,10 @@ async function registerStore(event: FormEvent<HTMLFormElement>) {
         onSendMessage={sendMessage}
         onRespondToProposal={(negotiationId, messageId, action) => void respondToProposal(negotiationId, messageId, action)}
         onComplete={(negotiationId) => void completeNegotiation(negotiationId)}
-      />
+        />
+        {profile && !isMerchant && workspace}
+      </>}
+      {isMerchant && session && <MerchantDashboard session={session} refreshKey={catalog.products}>{workspace}</MerchantDashboard>}
       {!session && <Account
         authMode={authMode}
         authForm={authForm}
