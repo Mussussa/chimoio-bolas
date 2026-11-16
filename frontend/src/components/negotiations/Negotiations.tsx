@@ -28,7 +28,7 @@ export default function Negotiations({
 }: NegotiationsProps) {
   return (
     <section className="section negotiations" id="negociacoes">
-      <div className="section-head"><div><p className="eyebrow">MENSAGENS E PROPOSTAS</p><h2>Negociações</h2><p>Conversa e propostas passam pelo Express; não há pagamentos ou escrow na plataforma.</p></div></div>
+      <div className="section-head"><div><p className="eyebrow">MENSAGENS E PROPOSTAS</p><h2>Negociações</h2><p>Acompanha as tuas conversas e propostas de serviços.</p></div></div>
       {!sessionExists && <p className="empty">Inicia sessão para abrir negociações.</p>}
       {negotiations.map((negotiation) => (
         <article className="negotiation-card" key={negotiation.id}>

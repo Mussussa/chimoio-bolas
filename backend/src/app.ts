@@ -12,8 +12,18 @@ export const app = express();
 
 app.disable("x-powered-by");
 app.use(requestLogger);
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://written-dullness-hexagram.ngrok-free.dev",
+  ...(process.env.FRONTEND_ORIGINS ?? process.env.FRONTEND_ORIGIN ?? "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean)
+];
 app.use(cors({
-  origin: process.env.FRONTEND_ORIGIN ?? "http://localhost:5173",
+  origin: (origin, callback) => {
+    callback(null, !origin || allowedOrigins.includes(origin));
+  },
   allowedHeaders: ["authorization", "content-type"],
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
 }));

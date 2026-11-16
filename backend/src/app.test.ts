@@ -20,6 +20,22 @@ describe("API Express", () => {
     expect(sequelize.authenticate).toHaveBeenCalledOnce();
   });
 
+  it("permite CORS apenas para a origem local e o domínio ngrok da apresentação", async () => {
+    const local = await request(app).options("/api/health")
+      .set("Origin", "http://localhost:5173")
+      .set("Access-Control-Request-Method", "GET");
+    const presentation = await request(app).options("/api/health")
+      .set("Origin", "https://written-dullness-hexagram.ngrok-free.dev")
+      .set("Access-Control-Request-Method", "GET");
+    const untrusted = await request(app).options("/api/health")
+      .set("Origin", "https://untrusted.example")
+      .set("Access-Control-Request-Method", "GET");
+
+    expect(local.headers["access-control-allow-origin"]).toBe("http://localhost:5173");
+    expect(presentation.headers["access-control-allow-origin"]).toBe("https://written-dullness-hexagram.ngrok-free.dev");
+    expect(untrusted.headers["access-control-allow-origin"]).toBeUndefined();
+  });
+
   it("não informa sucesso quando a base de dados está indisponível", async () => {
     vi.spyOn(sequelize, "authenticate").mockRejectedValue(new Error("connection refused"));
     const response = await request(app).get("/api/health");

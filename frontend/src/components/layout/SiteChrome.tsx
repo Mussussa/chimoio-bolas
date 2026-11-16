@@ -4,38 +4,28 @@ import type { Notice, Profile } from "../../lib/types";
 
 type HeaderProps = Readonly<{
   profile: Profile | null;
-  apiHealth: "checking" | "online" | "offline";
   pendingNegotiations: number;
   showStoreConversations: boolean;
   onSignOut: () => void;
 }>;
 
-export function SiteHeader({ profile, apiHealth, pendingNegotiations, showStoreConversations, onSignOut }: HeaderProps) {
+export function SiteHeader({ profile, pendingNegotiations, showStoreConversations, onSignOut }: HeaderProps) {
   const dashboardLabels: Record<Profile["role"], string> = {
     client: "Abrir negócio",
     lojista: "Minha Loja",
     prestador: "Painel do Prestador",
     admin: "Administração"
   };
-  const healthLabels = {
-    checking: "a verificar",
-    online: "online",
-    offline: "indisponível"
-  };
-
   return (
     <header className="topbar">
       <Link className="brand" to="/"><span className="brand-icon">CB</span><span>Chimoio <b>Boladas</b><small>NEGÓCIOS LOCAIS</small></span></Link>
       <nav aria-label="Navegação principal">
         <Link to="/">Explorar</Link>
-        <Link to="/negociacoes">Negociações{pendingNegotiations > 0 && <span className="nav-badge" aria-label={`${pendingNegotiations} pendentes`}>{pendingNegotiations}</span>}</Link>
+        {profile && <Link to="/negociacoes">Negociações{pendingNegotiations > 0 && <span className="nav-badge" aria-label={`${pendingNegotiations} pendentes`}>{pendingNegotiations}</span>}</Link>}
         {showStoreConversations && <Link to="/conversas">Conversas</Link>}
         {profile && <Link to="/painel">{dashboardLabels[profile.role]}</Link>}
       </nav>
       <div className="account">
-        <span className={`api-health is-${apiHealth}`} aria-label={`Estado da API: ${apiHealth}`}>
-          <span aria-hidden="true" /> API {healthLabels[apiHealth]}
-        </span>
         {profile ? <><Link to="/conta">{profile.name}</Link><button className="button button-outline" onClick={onSignOut}>Sair</button></> : <Link className="button button-dark" to="/conta">Entrar</Link>}
       </div>
     </header>
@@ -73,6 +63,19 @@ export function Hero() {
       </div>
       <div className="hero-stamp"><span>19°07′ S</span><b>CHIMOIO</b><span>33°29′ E</span></div>
     </section>
+  );
+}
+
+export function VisitorGuide() {
+  return (
+    <aside className="visitor-guide" aria-label="Como usar o Chimoio Boladas">
+      <strong>Como usar</strong>
+      <ol>
+        <li>Escolhe uma categoria ou pesquisa o que procuras.</li>
+        <li>Abre um produto, serviço ou loja para ver os detalhes.</li>
+        <li>Entra na tua conta para conversar ou negociar.</li>
+      </ol>
+    </aside>
   );
 }
 

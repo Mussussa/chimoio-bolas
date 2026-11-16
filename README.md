@@ -110,6 +110,18 @@ O frontend e o backend têm de apontar para o mesmo projecto Supabase. O fronten
 
    Frontend: `http://localhost:5173`; API: `http://localhost:3001`. `GET /api/health` testa a ligação ao PostgreSQL em cada pedido e devolve HTTP 503 se a base estiver indisponível. O backend só inicia após uma ligação PostgreSQL bem-sucedida.
 
+### Apresentar pelo ngrok
+
+Mantém o backend e o frontend em execução e inicia o túnel para o frontend:
+
+```sh
+ngrok http 5173
+```
+
+Abre `https://written-dullness-hexagram.ngrok-free.dev`. O proxy do Vite encaminha `/api` para `http://localhost:3001`, pelo que não é necessário expor uma segunda porta; mantém também o backend ligado ao mesmo PostgreSQL/Supabase usado pelo frontend. O domínio ngrok está explicitamente permitido pelo Vite e pelo CORS do backend, sem permitir origens arbitrárias. Se o endereço público mudar, actualiza-o em `frontend/vite.config.ts`, `backend/src/app.ts` (ou define `FRONTEND_ORIGINS`) e nas URLs de redireccionamento do Auth Supabase.
+
+Se estiveres a usar um projecto Supabase gerido, adiciona também `https://written-dullness-hexagram.ngrok-free.dev/**` à lista **Authentication → URL Configuration → Redirect URLs** no dashboard desse projecto. `supabase/config.toml` cobre apenas a configuração local da Supabase CLI.
+
 ## Executar localmente com Supabase CLI
 
 Requisitos: Node.js 22.12+, npm, Docker e Supabase CLI.

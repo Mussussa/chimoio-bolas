@@ -20,7 +20,8 @@ export default function useCatalog(setNotice: Dispatch<SetStateAction<Notice>>) 
       setCatalog(await fetchCatalog());
       setCatalogStatus("ready");
     } catch (error) {
-      const message = (error as Error).message;
+      console.error("Catalog load failed", error);
+      const message = "Não foi possível carregar as ofertas agora. Tenta novamente mais tarde.";
       setCatalogError(message);
       setCatalogStatus("error");
       setNotice({ text: message, error: true });

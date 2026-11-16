@@ -116,7 +116,7 @@ export default function Workspace({
       return;
     }
     if (!supabase) {
-      alert("O cliente Supabase não está inicializado.");
+      alert("O serviço de fotografias está temporariamente indisponível. Tenta novamente mais tarde.");
       return;
     }
 

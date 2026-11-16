@@ -6,8 +6,9 @@ import { Product, Review, Service, ServiceProvider, Store, User } from "../model
 export const getPublicStore: RequestHandler = async (req, res, next) => {
   try {
     const identifier = req.params.slug as string;
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(identifier);
     const store = await Store.findOne({
-      where: { [Op.or]: [{ slug: identifier }, { id: identifier }] }
+      where: isUuid ? { [Op.or]: [{ slug: identifier }, { id: identifier }] } : { slug: identifier }
     });
     if (!store) return sendError(res, 404, "Loja não encontrada.");
     const [products, reviews] = await Promise.all([

@@ -270,18 +270,6 @@ export function sendStoreMessage(session: Session, conversationId: string, conte
   );
 }
 
-export type ApiHealth = {
-  api: "online";
-  database: "connected";
-};
-
-export async function checkApiHealth(): Promise<boolean> {
-  const response = await fetch("/api/health");
-  if (!response.ok) return false;
-  const result = await response.json() as { success?: boolean; data?: ApiHealth };
-  return result.success === true && result.data?.api === "online" && result.data.database === "connected";
-}
-
 export async function loadMerchantStore(session: Session): Promise<MerchantStore> {
   const result = await api<{ store: Omit<MerchantStore, "category"> & { category: unknown } }>("/merchant/store/me", session);
   return { ...result.store, category: normalizeStoreCategories(result.store.category) };

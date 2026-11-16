@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import type { MapStore, Product, Profile, Service, ServiceProvider, Store } from "../../lib/types";
 import type { ReviewPayload } from "../../lib/api";
 import MapExplorer from "./MapExplorer";
 import ReviewForm from "./ReviewForm";
+import { CatalogNavigation } from "./DirectoryControls";
 
 type MarketplaceProps = Readonly<{
   stores: Store[];
@@ -35,11 +36,14 @@ function parseCategories(category: unknown): string[] {
     return category.filter((item): item is string => typeof item === "string");
   }
   if (typeof category === "string" && category.trim()) {
-    return category
-      .replace(/[{}]/g, "")
-      .split(",")
-      .map((c) => c.trim())
-      .filter(Boolean);
+    const value = category.trim();
+    try {
+      const parsed: unknown = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed.filter((item): item is string => typeof item === "string");
+    } catch {
+      // Category arrays may also arrive in PostgreSQL's textual format.
+    }
+    return value.replace(/^\{|\}$/g, "").split(",").map((item) => item.trim().replace(/^"(.*)"$/, "$1")).filter(Boolean);
   }
   return [];
 }
@@ -67,16 +71,12 @@ export default function Marketplace({
   onStartNegotiation,
   onReview
 }: MarketplaceProps) {
-  const [activeTab, setActiveTab] = useState<"all" | "products" | "services" | "stores">("all");
   const matchingStores = useMemo(() => stores.filter((store) => {
     const categories = parseCategories(store.category);
     const term = search.trim().toLocaleLowerCase();
     return !term || `${store.name} ${categories.join(" ")} ${store.address} ${store.description}`.toLocaleLowerCase().includes(term);
   }), [search, stores]);
-  const showProducts = activeTab === "all" || activeTab === "products";
-  const showServices = activeTab === "all" || activeTab === "services";
-  const showStores = activeTab === "all" || activeTab === "stores";
-  const hasResults = (showProducts && products.length > 0) || (showServices && services.length > 0) || (showStores && matchingStores.length > 0);
+  const hasResults = products.length > 0 || services.length > 0 || matchingStores.length > 0;
 
   return (
     <section className="market section" id="mercado">
@@ -84,7 +84,7 @@ export default function Marketplace({
         <div>
           <p className="eyebrow">CATÁLOGO PÚBLICO</p>
           <h2>Descubra a cidade</h2>
-          <p>As listas e coordenadas são lidas directamente do Supabase com políticas RLS.</p>
+          <p>Encontra produtos, serviços e lojas perto de ti.</p>
         </div>
         <div className="search-box">
           <input 
@@ -95,30 +95,24 @@ export default function Marketplace({
           <button className="button button-outline" onClick={onLocate}>Usar GPS</button>
         </div>
       </div>
-      <nav className="catalog-tabs" aria-label="Filtrar ofertas">
-        <button type="button" className={activeTab === "all" ? "is-active" : ""} onClick={() => setActiveTab("all")}>Tudo</button>
-        <button type="button" className={activeTab === "products" ? "is-active" : ""} onClick={() => setActiveTab("products")}>Produtos</button>
-        <button type="button" className={activeTab === "services" ? "is-active" : ""} onClick={() => setActiveTab("services")}>Serviços</button>
-        <button type="button" className={activeTab === "stores" ? "is-active" : ""} onClick={() => setActiveTab("stores")}>Lojas no Mapa</button>
-      </nav>
-      <div className="directory-links">
-        <Link to="/lojas">Ver todas as lojas</Link>
-        <Link to="/servicos">Ver todos os serviços e prestadores</Link>
-      </div>
+      <CatalogNavigation />
       {nearby && coordinates && (
         <p className="geo-note">
           Distâncias calculadas no navegador a partir da sua localização. <button onClick={onClearLocation}>Limpar</button>
         </p>
       )}
-      {(activeTab === "all" || activeTab === "stores") && <MapExplorer stores={mapStores} gps={coordinates} loading={mapLoading} error={mapError} />}
+      <MapExplorer stores={mapStores} gps={coordinates} loading={mapLoading} error={mapError} />
       <div className="catalog-grid">
-        {showProducts && products.map((product) => {
+        {products.map((product) => {
           const store = stores.find((item) => item.id === product.store_id);
+          const productHref = store
+            ? `/lojas/${encodeURIComponent(store.slug)}#produto-${product.id}`
+            : `/produtos/${product.id}`;
           return (
             <article className="listing-card" key={product.id}>
               <span className="tag">PRODUTO · {product.category}</span>
-              {product.images?.[0] && <img className="service-listing-image" src={product.images[0]} alt={product.name} />}
-              <h3><Link to={`/produtos/${product.id}`}>{product.name}</Link></h3>
+              {product.images?.[0] && <Link to={productHref}><img className="service-listing-image" src={product.images[0]} alt={product.name} /></Link>}
+              <h3><Link to={productHref}>{product.name}</Link></h3>
               <p>{product.description}</p>
               <div className="listing-foot">
                 <b>{Number(product.price).toLocaleString("pt-MZ")} MT</b>
@@ -145,7 +139,7 @@ export default function Marketplace({
         })}
 
         <div id="servicos" className="catalog-section-anchor" />
-        {showServices && services.map((service) => {
+        {services.map((service) => {
           const provider = providers.find((item) => item.id === service.provider_id);
           return (
             <article className="listing-card service-card" key={service.id}>
@@ -169,7 +163,7 @@ export default function Marketplace({
           );
         })}
 
-        {showStores && matchingStores.map((store) => {
+        {matchingStores.map((store) => {
             const cats = parseCategories(store.category);
             return (
               <article className="listing-card store-card" key={store.id}>
@@ -196,7 +190,7 @@ export default function Marketplace({
         {!hasResults && (
           <div className="empty">
             <p>{search ? `Não encontrámos ofertas para “${search}”.` : "Ainda não há ofertas nesta categoria."}</p>
-            <button type="button" className="button button-outline" onClick={() => { setActiveTab("all"); onClearFilters(); }}>
+            <button type="button" className="button button-outline" onClick={onClearFilters}>
               Limpar filtros
             </button>
           </div>

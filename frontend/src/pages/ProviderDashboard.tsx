@@ -64,7 +64,7 @@ export default function ProviderDashboard({ session, refreshCatalog, onProfileCh
   }, [session]);
 
   async function uploadMedia(file: File, folder: "profile" | "services"): Promise<string> {
-    if (!supabase) throw new Error("O Storage do Supabase não está configurado.");
+    if (!supabase) throw new Error("O serviço de fotografias está temporariamente indisponível.");
     const extensionByType: Record<string, string> = {
       "image/jpeg": "jpg",
       "image/png": "png",

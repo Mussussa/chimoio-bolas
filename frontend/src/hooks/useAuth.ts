@@ -38,7 +38,7 @@ export default function useAuth({ setNotice, setBusy }: UseAuthOptions) {
   const submitAuth = useCallback(async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!supabase) {
-      setNotice({ text: "Supabase local não está configurado.", error: true });
+      setNotice({ text: "O acesso à conta está temporariamente indisponível. Tenta novamente mais tarde.", error: true });
       return;
     }
     setBusy(true);

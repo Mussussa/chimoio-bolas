@@ -4,14 +4,13 @@ import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import AdminDashboard from "./AdminDashboard";
 import Account from "../components/auth/Account";
 import ProfileSettingsForm from "../components/auth/ProfileSettingsForm";
-import { Hero, NoticeBanner, SiteFooter, SiteHeader } from "../components/layout/SiteChrome";
+import { Hero, NoticeBanner, SiteFooter, SiteHeader, VisitorGuide } from "../components/layout/SiteChrome";
 import Marketplace from "../components/marketplace/Marketplace";
 import Negotiations from "../components/negotiations/Negotiations";
 import Workspace from "../components/workspace/Workspace";
 import MerchantDashboard from "./MerchantDashboard";
 import ProviderDashboard from "./ProviderDashboard";
 import {
-  checkApiHealth,
   createProduct as createProductRequest,
   createReview as createReviewRequest,
   registerProvider as registerProviderRequest,
@@ -26,6 +25,7 @@ import useNegotiations from "../hooks/useNegotiations";
 import useStoreConversations from "../hooks/useStoreConversations";
 import {
   ProductDetailPage,
+  ProductsDirectoryPage,
   ProviderDetailPage,
   ServicesDirectoryPage,
   StoreConversationPage,
@@ -38,7 +38,6 @@ type StoreRegistration = StoreForm & { neighborhood?: string };
 export default function MarketplacePage() {
   const [notice, setNotice] = useState<Notice>(null);
   const [busy, setBusy] = useState(false);
-  const [apiHealth, setApiHealth] = useState<"checking" | "online" | "offline">("checking");
   const [priceDrafts, setPriceDrafts] = useState<Record<string, string>>({});
   const navigate = useNavigate();
   const dismissNotice = useCallback(() => setNotice(null), []);
@@ -66,24 +65,6 @@ export default function MarketplacePage() {
   useEffect(() => {
     void loadCatalog();
   }, [loadCatalog]);
-
-  useEffect(() => {
-    let active = true;
-    const refreshApiHealth = async () => {
-      try {
-        const isHealthy = await checkApiHealth();
-        if (active) setApiHealth(isHealthy ? "online" : "offline");
-      } catch {
-        if (active) setApiHealth("offline");
-      }
-    };
-    void refreshApiHealth();
-    const interval = window.setInterval(() => void refreshApiHealth(), 30_000);
-    return () => {
-      active = false;
-      window.clearInterval(interval);
-    };
-  }, []);
 
   async function runApi<T>(request: (currentSession: Session) => Promise<T>): Promise<T | null> {
     if (!session) {
@@ -224,7 +205,6 @@ export default function MarketplacePage() {
       <NoticeBanner notice={notice} onDismiss={dismissNotice} />
       <SiteHeader
         profile={profile}
-        apiHealth={apiHealth}
         pendingNegotiations={pendingCount}
         showStoreConversations={profile?.role === "client" || profile?.role === "lojista"}
         onSignOut={() => void auth.signOut()}
@@ -233,6 +213,7 @@ export default function MarketplacePage() {
         <Route path="/" element={
           <>
             <Hero />
+            <VisitorGuide />
             <Marketplace
               stores={catalog.stores}
               mapStores={catalog.mapStores}
@@ -273,7 +254,8 @@ export default function MarketplacePage() {
           />
         } />
         <Route path="/painel" element={renderDashboard()} />
-        <Route path="/lojas" element={<StoresDirectoryPage stores={catalog.stores} />} />
+        <Route path="/produtos" element={<ProductsDirectoryPage products={catalog.products} stores={catalog.stores} query={search} onQueryChange={setSearch} />} />
+        <Route path="/lojas" element={<StoresDirectoryPage stores={catalog.stores} query={search} onQueryChange={setSearch} />} />
         <Route path="/lojas/:slug" element={
           <StoreDetailPage
             session={session}
@@ -283,15 +265,8 @@ export default function MarketplacePage() {
             onStartStoreConversation={startStoreConversation}
           />
         } />
-        <Route path="/produtos/:productId" element={
-          <ProductDetailPage
-            session={session}
-            profile={profile}
-            busy={busy}
-            onStartStoreConversation={startStoreConversation}
-          />
-        } />
-        <Route path="/servicos" element={<ServicesDirectoryPage providers={catalog.providers} services={catalog.services} />} />
+        <Route path="/produtos/:productId" element={<ProductDetailPage />} />
+        <Route path="/servicos" element={<ServicesDirectoryPage providers={catalog.providers} services={catalog.services} query={search} onQueryChange={setSearch} />} />
         <Route path="/prestadores/:providerId" element={
           <ProviderDetailPage
             session={session}

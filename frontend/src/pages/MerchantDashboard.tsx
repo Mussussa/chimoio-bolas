@@ -76,7 +76,7 @@ export default function MerchantDashboard({ session, refreshKey, children }: Mer
   }
 
   async function uploadStoreLogo(file: File): Promise<string> {
-    if (!supabase) throw new Error("O Storage do Supabase não está configurado.");
+    if (!supabase) throw new Error("O serviço de fotografias está temporariamente indisponível.");
     const extensionByType: Record<string, string> = {
       "image/jpeg": "jpg",
       "image/png": "png",

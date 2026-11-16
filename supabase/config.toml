@@ -18,7 +18,11 @@ port = 54323
 [auth]
 enabled = true
 site_url = "http://localhost:5173"
-additional_redirect_urls = ["http://localhost:5173"]
+additional_redirect_urls = [
+  "http://localhost:5173",
+  "https://written-dullness-hexagram.ngrok-free.dev",
+  "https://written-dullness-hexagram.ngrok-free.dev/**"
+]
 enable_signup = true
 
 [auth.email]

@@ -1,19 +1,20 @@
-import { useEffect, useState, type FormEvent } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import type { Session } from "@supabase/supabase-js";
 import {
   loadPublicProduct,
   loadPublicProvider,
   loadPublicStore,
-  type PublicProductDetail,
   type PublicProviderDetail,
   type PublicReview,
   type PublicStoreDetail,
   type StoreConversation
 } from "../lib/api";
-import type { Profile, Service, ServiceProvider, Store } from "../lib/types";
+import type { Product, Profile, Service, ServiceProvider, Store } from "../lib/types";
 import MapExplorer from "../components/marketplace/MapExplorer";
 import ReviewForm from "../components/marketplace/ReviewForm";
+import { CatalogNavigation, DirectoryFilters } from "../components/marketplace/DirectoryControls";
+import SharePageButton from "../components/marketplace/SharePageButton";
 import type { ReviewPayload } from "../lib/api";
 import type { StoreConversationMessage } from "../lib/api";
 
@@ -31,12 +32,21 @@ type StoreContactProps = PublicPageProps & Readonly<{
   onStartStoreConversation: (storeId: string, content: string, productId?: string) => Promise<string | null>;
 }>;
 
+function storeProductHref(storeSlug: string, productId: string) {
+  return `/lojas/${encodeURIComponent(storeSlug)}#produto-${productId}`;
+}
+
 export function StoreDetailPage({ session, profile, busy, onReview, onStartStoreConversation }: StoreContactProps & ReviewPageProps) {
   const { slug = "" } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [detail, setDetail] = useState<PublicStoreDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const selectedProductId = location.hash.startsWith("#produto-")
+    ? location.hash.slice("#produto-".length)
+    : "";
+  const selectedProduct = detail?.products.find((product) => product.id === selectedProductId);
 
   useEffect(() => {
     let active = true;
@@ -48,10 +58,18 @@ export function StoreDetailPage({ session, profile, busy, onReview, onStartStore
     return () => { active = false; };
   }, [slug]);
 
+  useEffect(() => {
+    if (!detail || !selectedProductId) return;
+    const productCard = document.getElementById(`produto-${selectedProductId}`);
+    if (!productCard) return;
+    productCard.scrollIntoView({ behavior: "smooth", block: "center" });
+    productCard.focus({ preventScroll: true });
+  }, [detail, selectedProductId]);
+
   async function contactStore(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!detail) return;
-    const conversationId = await onStartStoreConversation(detail.store.id, message);
+    const conversationId = await onStartStoreConversation(detail.store.id, message, selectedProduct?.id);
     if (conversationId) await navigate(`/conversas/${conversationId}`);
   }
 
@@ -80,31 +98,51 @@ export function StoreDetailPage({ session, profile, busy, onReview, onStartStore
           <h1>{store.name}</h1>
           <p>{store.category.join(" · ")}</p>
         </div>
+        <SharePageButton title={store.name} text={`Conhece a loja ${store.name} em Chimoio Boladas.`} label="Partilhar loja" />
       </header>
       <p className="public-detail-copy">{store.description}</p>
       <p className="listing-location">{store.address}</p>
       <MapExplorer stores={[mapStore]} gps={null} loading={false} error={null} />
       {profile?.role === "client" && store.verified && (
         <form className="panel store-contact-form" onSubmit={(event) => void contactStore(event)}>
-          <h2>Falar com a loja</h2>
+          <h2>{selectedProduct ? `Perguntar sobre ${selectedProduct.name}` : "Falar com a loja"}</h2>
           <label htmlFor="store-message">A tua mensagem</label>
-          <textarea id="store-message" required maxLength={4000} value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Pergunta sobre disponibilidade, entrega ou detalhes..." />
+          <textarea id="store-message" required maxLength={4000} value={message} onChange={(event) => setMessage(event.target.value)} placeholder={selectedProduct ? `Olá, gostaria de saber mais sobre ${selectedProduct.name}...` : "Pergunta sobre disponibilidade, entrega ou detalhes..."} />
           <button className="button button-dark" disabled={busy}>Iniciar conversa</button>
         </form>
       )}
       {!store.verified && <p className="geo-note">Esta loja aguarda verificação; a conversa directa ficará disponível após aprovação.</p>}
-      {!session && store.verified && <p className="geo-note">Para conversar com a loja, <Link to="/conta">inicia sessão como cliente</Link>.</p>}
+      {store.verified && !session && (
+        <p className="geo-note">Podes visitar e partilhar esta loja sem conta. Para avaliar ou enviar mensagem, <Link to="/conta">inicia sessão ou cria uma conta de cliente</Link>.</p>
+      )}
+      {store.verified && session && profile?.role !== "client" && (
+        <p className="geo-note">Podes visitar e partilhar esta loja. Para avaliar ou enviar mensagem, é necessária uma conta de cliente.</p>
+      )}
 
       <section className="detail-section">
         <h2>Produtos da loja <span className="detail-count">{products.length}</span></h2>
         {products.length ? (
           <div className="catalog-grid">
             {products.map((product) => (
-              <article className="listing-card" key={product.id}>
-                {product.images?.[0] && <Link to={`/produtos/${product.id}`}><img className="service-listing-image" src={product.images[0]} alt={product.name} /></Link>}
-                <h3><Link to={`/produtos/${product.id}`}>{product.name}</Link></h3>
+              <article
+                className={`listing-card${selectedProductId === product.id ? " listing-card-highlighted" : ""}`}
+                id={`produto-${product.id}`}
+                key={product.id}
+                tabIndex={selectedProductId === product.id ? -1 : undefined}
+              >
+                {product.images?.[0] && <Link to={storeProductHref(store.slug, product.id)}><img className="service-listing-image" src={product.images[0]} alt={product.name} /></Link>}
+                <h3><Link to={storeProductHref(store.slug, product.id)}>{product.name}</Link></h3>
                 <p>{product.description}</p>
-                <div className="listing-foot"><b>{Number(product.price).toLocaleString("pt-MZ")} MT</b><Link to={`/produtos/${product.id}`}>Ver produto</Link></div>
+                <div className="listing-foot">
+                  <b>{Number(product.price).toLocaleString("pt-MZ")} MT</b>
+                  <SharePageButton
+                    title={product.name}
+                    text={`${product.name} na loja ${store.name} · ${Number(product.price).toLocaleString("pt-MZ")} MT.`}
+                    label="Partilhar produto"
+                    url={`${window.location.origin}${storeProductHref(store.slug, product.id)}`}
+                    imageUrl={product.images?.[0]}
+                  />
+                </div>
               </article>
             ))}
           </div>
@@ -116,60 +154,26 @@ export function StoreDetailPage({ session, profile, busy, onReview, onStartStore
   );
 }
 
-export function ProductDetailPage({ session, profile, busy, onStartStoreConversation }: StoreContactProps) {
+export function ProductDetailPage() {
   const { productId = "" } = useParams();
   const navigate = useNavigate();
-  const [detail, setDetail] = useState<PublicProductDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState("");
 
   useEffect(() => {
     let active = true;
-    setDetail(null);
     setError(null);
     void loadPublicProduct(productId)
-      .then((result) => { if (active) setDetail(result); })
+      .then((result) => {
+        if (active) {
+          void navigate(storeProductHref(result.store.slug, result.product.id), { replace: true });
+        }
+      })
       .catch((loadError: Error) => { if (active) setError(loadError.message); });
     return () => { active = false; };
-  }, [productId]);
-
-  async function contactStore(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!detail) return;
-    const conversationId = await onStartStoreConversation(detail.store.id, message, detail.product.id);
-    if (conversationId) await navigate(`/conversas/${conversationId}`);
-  }
+  }, [navigate, productId]);
 
   if (error) return <section className="section"><p className="empty">{error} <Link to="/">Voltar ao catálogo</Link></p></section>;
-  if (!detail) return <section className="section"><p className="empty">A carregar produto...</p></section>;
-  const { product, store } = detail;
-
-  return (
-    <article className="section public-detail product-detail">
-      <Link to={`/lojas/${store.slug}`} className="detail-back">← {store.name}</Link>
-      <div className="product-detail-layout">
-        {product.images?.[0] && <img className="product-detail-image" src={product.images[0]} alt={product.name} />}
-        <div>
-          <span className="tag">PRODUTO · {product.category}</span>
-          {!store.verified && <span className="tag tag-new-store">Loja pendente de verificação</span>}
-          <h1>{product.name}</h1>
-          <p className="product-detail-price">{Number(product.price).toLocaleString("pt-MZ")} MT</p>
-          <p>{product.description}</p>
-          {product.minOrderQty > 1 && <p>Quantidade mínima: {product.minOrderQty}</p>}
-          <p>Vendido por <Link to={`/lojas/${store.slug}`}><b>{store.name}</b></Link> · {store.address}</p>
-          {profile?.role === "client" && store.verified && (
-            <form className="store-contact-form" onSubmit={(event) => void contactStore(event)}>
-              <label htmlFor="product-message">Perguntar à loja sobre este produto</label>
-              <textarea id="product-message" required maxLength={4000} value={message} onChange={(event) => setMessage(event.target.value)} placeholder={`Olá, gostaria de saber mais sobre ${product.name}...`} />
-              <button className="button button-dark" disabled={busy}>Conversar com a loja</button>
-            </form>
-          )}
-          {!store.verified && <p className="geo-note">A loja aguarda verificação; o contacto directo ficará disponível após aprovação.</p>}
-          {!session && store.verified && <p className="geo-note"><Link to="/conta">Inicia sessão como cliente</Link> para conversar com a loja.</p>}
-        </div>
-      </div>
-    </article>
-  );
+  return <section className="section"><p className="empty">A abrir a loja e a destacar o produto...</p></section>;
 }
 
 export function ProviderDetailPage({
@@ -228,17 +232,92 @@ export function ProviderDetailPage({
   );
 }
 
-export function StoresDirectoryPage({ stores }: { stores: Store[] }) {
+function parseDirectoryCategories(category: unknown): string[] {
+  if (Array.isArray(category)) return category.filter((item): item is string => typeof item === "string");
+  if (typeof category !== "string" || !category.trim()) return [];
+  const value = category.trim();
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (Array.isArray(parsed)) return parsed.filter((item): item is string => typeof item === "string");
+  } catch {
+    // Supabase may return PostgreSQL arrays in their textual form.
+  }
+  return value.replace(/^\{|\}$/g, "").split(",").map((item) => item.trim().replace(/^"(.*)"$/, "$1")).filter(Boolean);
+}
+
+export function ProductsDirectoryPage({ products, stores, query, onQueryChange }: {
+  products: Product[];
+  stores: Store[];
+  query: string;
+  onQueryChange: (value: string) => void;
+}) {
+  const [category, setCategory] = useState("");
+  const categories = useMemo(() => [...new Set(products.map((product) => product.category).filter(Boolean))].sort(), [products]);
+  const filteredProducts = useMemo(() => {
+    const term = query.trim().toLocaleLowerCase();
+    return products.filter((product) => {
+      const store = stores.find((item) => item.id === product.store_id);
+      return (!category || product.category === category) &&
+        (!term || `${product.name} ${product.description} ${product.category} ${store?.name ?? ""}`.toLocaleLowerCase().includes(term));
+    });
+  }, [category, products, query, stores]);
+
   return (
     <section className="section public-detail">
-      <Link to="/" className="detail-back">← Voltar a explorar</Link>
-      <div className="section-head"><div><p className="eyebrow">NEGÓCIOS LOCAIS</p><h1>Lojas em Chimoio</h1><p>Explora lojas verificadas, produtos e localização.</p></div></div>
-      {!stores.length ? <p className="empty">Ainda não há lojas verificadas.</p> : (
+      <div className="section-head"><div><p className="eyebrow">CATÁLOGO LOCAL</p><h1>Produtos em Chimoio</h1><p>Pesquisa produtos e abre a loja directamente no produto escolhido.</p></div></div>
+      <CatalogNavigation />
+      <DirectoryFilters query={query} onQueryChange={onQueryChange} category={category} categories={categories} onCategoryChange={setCategory} searchLabel="Pesquisar produtos..." />
+      {!filteredProducts.length ? <p className="empty">Não encontrámos produtos com estes filtros.</p> : (
         <div className="catalog-grid">
-          {stores.map((store) => (
+          {filteredProducts.map((product) => {
+            const store = stores.find((item) => item.id === product.store_id);
+            const productHref = store ? storeProductHref(store.slug, product.id) : `/produtos/${product.id}`;
+            return (
+              <article className="listing-card" key={product.id}>
+                {product.images?.[0] && <Link to={productHref}><img className="service-listing-image" src={product.images[0]} alt={product.name} /></Link>}
+                <span className="tag">PRODUTO · {product.category}</span>
+                <h2><Link to={productHref}>{product.name}</Link></h2>
+                <p>{product.description}</p>
+                <div className="listing-foot"><b>{Number(product.price).toLocaleString("pt-MZ")} MT</b>{store && <Link to={`/lojas/${store.slug}`}>{store.name}</Link>}</div>
+                {store && <p className="listing-location">{store.verified ? "Loja verificada" : "Loja pendente de verificação"} · {store.address}</p>}
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
+export function StoresDirectoryPage({ stores, query, onQueryChange }: {
+  stores: Store[];
+  query: string;
+  onQueryChange: (value: string) => void;
+}) {
+  const [category, setCategory] = useState("");
+  const categories = useMemo(() => [...new Set(stores.flatMap((store) => parseDirectoryCategories(store.category)))].sort(), [stores]);
+  const filteredStores = useMemo(() => {
+    const term = query.trim().toLocaleLowerCase();
+    return stores.filter((store) => {
+      const storeCategories = parseDirectoryCategories(store.category);
+      return (!category || storeCategories.includes(category)) &&
+        (!term || `${store.name} ${store.description} ${store.address} ${storeCategories.join(" ")}`.toLocaleLowerCase().includes(term));
+    });
+  }, [category, query, stores]);
+
+  return (
+    <section className="section public-detail">
+      <div className="section-head"><div><p className="eyebrow">NEGÓCIOS LOCAIS</p><h1>Lojas em Chimoio</h1><p>Encontra uma loja por nome, categoria ou localização.</p></div></div>
+      <CatalogNavigation />
+      <DirectoryFilters query={query} onQueryChange={onQueryChange} category={category} categories={categories} onCategoryChange={setCategory} searchLabel="Pesquisar lojas..." />
+      {!filteredStores.length ? <p className="empty">Não encontrámos lojas com estes filtros.</p> : (
+        <div className="catalog-grid">
+          {filteredStores.map((store) => (
             <article className="listing-card store-card" key={store.id}>
               {store.logo_url && <Link to={`/lojas/${store.slug}`}><img className="service-listing-image store-listing-logo" src={store.logo_url} alt={`Logótipo de ${store.name}`} /></Link>}
-              <span className="tag tag-verified">Loja verificada ✓</span>
+              <span className={`tag ${store.verified ? "tag-verified" : "tag-new-store"}`}>
+                {store.verified ? "Loja verificada ✓" : "Pendente de verificação"} · {parseDirectoryCategories(store.category).join(" · ")}
+              </span>
               <h2><Link to={`/lojas/${store.slug}`}>{store.name}</Link></h2>
               <p>{store.description}</p>
               <div className="listing-foot"><span>{store.address}</span><Link to={`/lojas/${store.slug}`}>Ver loja</Link></div>
@@ -252,18 +331,35 @@ export function StoresDirectoryPage({ stores }: { stores: Store[] }) {
 
 export function ServicesDirectoryPage({
   providers,
-  services
+  services,
+  query,
+  onQueryChange
 }: {
   providers: ServiceProvider[];
   services: Service[];
+  query: string;
+  onQueryChange: (value: string) => void;
 }) {
+  const [category, setCategory] = useState("");
+  const categories = useMemo(() => [...new Set(services.map((service) => service.category).filter(Boolean))].sort(), [services]);
+  const filteredServices = useMemo(() => {
+    const term = query.trim().toLocaleLowerCase();
+    return services.filter((service) => {
+      const provider = providers.find((item) => item.id === service.provider_id);
+      const providerCategories = parseDirectoryCategories(provider?.category);
+      return (!category || service.category === category) &&
+        (!term || `${service.title} ${service.description} ${service.category} ${providerCategories.join(" ")}`.toLocaleLowerCase().includes(term));
+    });
+  }, [category, providers, query, services]);
+
   return (
     <section className="section public-detail">
-      <Link to="/" className="detail-back">← Voltar a explorar</Link>
       <div className="section-head"><div><p className="eyebrow">PROFISSIONAIS LOCAIS</p><h1>Serviços em Chimoio</h1><p>Consulta serviços publicados e fala directamente com o prestador.</p></div></div>
-      {!services.length ? <p className="empty">Ainda não há serviços publicados.</p> : (
+      <CatalogNavigation />
+      <DirectoryFilters query={query} onQueryChange={onQueryChange} category={category} categories={categories} onCategoryChange={setCategory} searchLabel="Pesquisar serviços..." />
+      {!filteredServices.length ? <p className="empty">Não encontrámos serviços com estes filtros.</p> : (
         <div className="catalog-grid">
-          {services.map((service) => {
+          {filteredServices.map((service) => {
             const provider = providers.find((item) => item.id === service.provider_id);
             return (
               <article className="listing-card service-card" key={service.id}>
