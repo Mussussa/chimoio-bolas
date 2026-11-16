@@ -1,0 +1,7 @@
+{
+  "rewrites": [
+    { "source": "/negociacoes", "destination": "/index.html" },
+    { "source": "/painel", "destination": "/index.html" },
+    { "source": "/conta", "destination": "/index.html" }
+  ]
+}

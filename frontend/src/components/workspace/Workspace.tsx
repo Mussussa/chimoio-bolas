@@ -1,34 +1,32 @@
-import { useState, type Dispatch, type FormEvent, type SetStateAction } from "react";
+import { useState, type FormEvent } from "react";
+import type { Session } from "@supabase/supabase-js";
 import type { ProductForm, Profile, ProviderForm, StoreForm } from "../../lib/types";
 import { CHIMOIO_NEIGHBORHOODS } from "../../lib/chimoioNeighborhoods";
+import { STORE_CATEGORIES } from "../merchant/merchantTypes";
+import { PROVIDER_CATEGORIES as SERVICE_CATEGORIES } from "../provider/providerTypes";
 import { supabase } from "../../lib/supabase";
 
 type WorkspaceProps = Readonly<{
+  session: Session;
   profile: Profile;
   busy: boolean;
-  providerForm: ProviderForm & { category: string[] };
-  storeForm: StoreForm & { neighborhood?: string; category: string[] };
-  productForm: ProductForm;
-  setProviderForm: Dispatch<SetStateAction<any>>;
-  setStoreForm: Dispatch<SetStateAction<any>>;
-  setProductForm: Dispatch<SetStateAction<ProductForm>>;
-  registerStore: (event: FormEvent<HTMLFormElement>) => void;
-  createProduct: (event: FormEvent<HTMLFormElement>, product?: ProductForm & { images?: string[] }) => void;
-  registerProvider: (event: FormEvent<HTMLFormElement>) => void;
+  onRegisterStore: (event: FormEvent<HTMLFormElement>, store: StoreForm & { neighborhood?: string }) => Promise<boolean>;
+  onCreateProduct: (event: FormEvent<HTMLFormElement>, product: ProductForm & { images?: string[] }) => Promise<boolean>;
+  onRegisterProvider: (event: FormEvent<HTMLFormElement>, provider: ProviderForm) => Promise<boolean>;
 }>;
 
-// Listas oficiais de categorias para os formulários de lojas e serviços
-const STORE_CATEGORIES = [
-  "Imóveis", "Eletrónicos", "Automóveis", "Agricultura",
-  "Materiais de Construção", "Moda & Vestuário", "Alimentação & Bebidas",
-  "Saúde & Beleza", "Casa & Decoração", "Diversos"
-];
-
-const SERVICE_CATEGORIES = [
-  "Construção", "Eletricidade", "Hidráulica", "Carpintaria & Serralharia",
-  "Transporte & Logística", "Hotelaria & Restauração", "Tecnologia & Informática",
-  "Beleza & Estética", "Limpeza & Jardinagem", "Diversos"
-];
+const initialProviderForm: ProviderForm = { category: [], bio: "", basePrice: "" };
+const initialStoreForm: StoreForm & { neighborhood?: string } = {
+  name: "",
+  slug: "",
+  category: [],
+  description: "",
+  address: "",
+  latitude: "-19.1164",
+  longitude: "33.4833",
+  neighborhood: ""
+};
+const initialProductForm: ProductForm = { name: "", description: "", price: "", category: "" };
 
 // Função para converter o nome da loja num slug de URL limpo
 function generateSlug(text: string) {
@@ -41,19 +39,17 @@ function generateSlug(text: string) {
 }
 
 export default function Workspace({
+  session,
   profile,
   busy,
-  providerForm,
-  storeForm,
-  productForm,
-  setProviderForm,
-  setStoreForm,
-  setProductForm,
-  registerStore,
-  createProduct,
-  registerProvider
+  onRegisterStore,
+  onCreateProduct,
+  onRegisterProvider
 }: WorkspaceProps) {
   const [gpsEnabled, setGpsEnabled] = useState(false);
+  const [providerForm, setProviderForm] = useState<ProviderForm>(initialProviderForm);
+  const [storeForm, setStoreForm] = useState<StoreForm & { neighborhood?: string }>(initialStoreForm);
+  const [productForm, setProductForm] = useState<ProductForm>(initialProductForm);
   
   // Estado local para gerir a fotografia do produto
   const [productImageFile, setProductImageFile] = useState<File | null>(null);
@@ -66,7 +62,7 @@ export default function Workspace({
     const updated = current.includes(cat)
       ? current.filter((c: string) => c !== cat)
       : [...current, cat];
-    setStoreForm((prev: any) => ({ ...prev, category: updated }));
+    setStoreForm((prev) => ({ ...prev, category: updated }));
   };
 
   const toggleProviderCategory = (cat: string) => {
@@ -74,12 +70,12 @@ export default function Workspace({
     const updated = current.includes(cat)
       ? current.filter((c: string) => c !== cat)
       : [...current, cat];
-    setProviderForm((prev: any) => ({ ...prev, category: updated }));
+    setProviderForm((prev) => ({ ...prev, category: updated }));
   };
 
   const handleNeighborhoodChange = (neighborhoodName: string) => {
     const found = CHIMOIO_NEIGHBORHOODS.find((n) => n.name === neighborhoodName);
-    setStoreForm((current: any) => ({
+    setStoreForm((current) => ({
       ...current,
       neighborhood: neighborhoodName,
       address: neighborhoodName && neighborhoodName !== "Outro / Periferia de Chimoio" 
@@ -97,7 +93,7 @@ export default function Workspace({
     }
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setStoreForm((current: any) => ({
+        setStoreForm((current) => ({
           ...current,
           latitude: position.coords.latitude.toFixed(6),
           longitude: position.coords.longitude.toFixed(6)
@@ -127,14 +123,20 @@ export default function Workspace({
     setUploadingImage(true);
     try {
       // 1. Faz o upload direto para o Supabase Storage (Bucket 'products')
-      const fileExt = productImageFile.name.split(".").pop();
-      const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
-      const filePath = `product-images/${fileName}`;
+      const extensionByType: Record<string, string> = {
+        "image/jpeg": "jpg",
+        "image/png": "png",
+        "image/webp": "webp"
+      };
+      const fileExt = extensionByType[productImageFile.type];
+      if (!fileExt || productImageFile.size > 5 * 1024 * 1024) {
+        throw new Error("A fotografia deve ser JPEG, PNG ou WebP e ter até 5 MB.");
+      }
+      const filePath = `${session.user.id}/product-images/${crypto.randomUUID()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from("products")
-        .upload(filePath, productImageFile);
-
+        .upload(filePath, productImageFile, { cacheControl: "3600", contentType: productImageFile.type, upsert: false });
       if (uploadError) throw uploadError;
 
       // 2. Obtém a URL pública oficial da imagem
@@ -150,15 +152,12 @@ export default function Workspace({
         images: [imageUrl] // O esquema Joi do backend espera 'images' como array
       };
 
-      setProductForm(finalPayload);
-
       // 4. Submete para o backend
-      createProduct(event, finalPayload);
-      
+      const created = await onCreateProduct(event, finalPayload);
+      if (created) setProductForm(initialProductForm);
       setProductImageFile(null);
     } catch (error) {
-      console.error("Erro ao carregar fotografia do produto:", (error as Error).message);
-      alert("Erro ao carregar a imagem para o servidor. Verifique as permissões do storage.");
+      alert(`Não foi possível carregar a fotografia do produto: ${(error as Error).message}`);
     } finally {
       setUploadingImage(false);
     }
@@ -174,7 +173,7 @@ export default function Workspace({
               <h2>Registar loja local em Chimoio</h2>
             </div>
           </div>
-          <form className="form-grid" onSubmit={registerStore}>
+          <form className="form-grid" onSubmit={(event) => void onRegisterStore(event, storeForm)}>
             {/* O slug é gerado e enviado automaticamente em segundo plano */}
             <input type="hidden" value={storeForm.slug} />
 
@@ -187,17 +186,17 @@ export default function Workspace({
                 value={storeForm.name} 
                 onChange={(event) => {
                   const name = event.target.value;
-                  setStoreForm((current: any) => ({ 
-                    ...current, 
-                    name, 
-                    slug: generateSlug(name) 
+                  setStoreForm((current) => ({
+                    ...current,
+                    name,
+                    slug: generateSlug(name)
                   }));
                 }} 
               />
             </label>
 
             <div className="wide">
-              <label>Categorias de Produtos da Loja (Pode selecionar várias):</label>
+              <p className="form-group-label">Categorias de Produtos da Loja (Pode selecionar várias):</p>
               <div className="checkbox-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "10px", marginTop: "8px" }}>
                 {STORE_CATEGORIES.map((cat) => (
                   <label key={cat} className="checkbox-item" style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
@@ -232,7 +231,7 @@ export default function Workspace({
                 required 
                 placeholder="Ex.: Próximo ao mercado central, Quarteirão 4"
                 value={storeForm.address} 
-                onChange={(event) => setStoreForm((current: any) => ({ ...current, address: event.target.value }))} 
+                onChange={(event) => setStoreForm((current) => ({ ...current, address: event.target.value }))}
               />
             </label>
 
@@ -250,7 +249,7 @@ export default function Workspace({
                 maxLength={4000} 
                 placeholder="Conte o que a sua loja vende, horários de atendimento ou facilidades de entrega..."
                 value={storeForm.description} 
-                onChange={(event) => setStoreForm((current: any) => ({ ...current, description: event.target.value }))} 
+                onChange={(event) => setStoreForm((current) => ({ ...current, description: event.target.value }))}
               />
             </label>
 
@@ -316,10 +315,10 @@ export default function Workspace({
               Fotografia do Produto (1 Foto)
               <input 
                 type="file" 
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp"
                 required
                 onChange={(event) => {
-                  if (event.target.files && event.target.files[0]) {
+                  if (event.target.files?.[0]) {
                     setProductImageFile(event.target.files[0]);
                   }
                 }}
@@ -353,9 +352,9 @@ export default function Workspace({
               <h2>Cadastre-se como prestador de serviços</h2>
             </div>
           </div>
-          <form className="form-grid" onSubmit={registerProvider}>
+          <form className="form-grid" onSubmit={(event) => void onRegisterProvider(event, providerForm)}>
             <div className="wide">
-              <label>Áreas de Atuação / Especialidades (Pode selecionar várias):</label>
+              <p className="form-group-label">Áreas de Atuação / Especialidades (Pode selecionar várias):</p>
               <div className="checkbox-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "10px", marginTop: "8px" }}>
                 {SERVICE_CATEGORIES.map((cat) => (
                   <label key={cat} className="checkbox-item" style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
@@ -379,7 +378,7 @@ export default function Workspace({
                 step="0.01" 
                 placeholder="Ex.: 500.00"
                 value={providerForm.basePrice} 
-                onChange={(event) => setProviderForm((current: any) => ({ ...current, basePrice: event.target.value }))} 
+                onChange={(event) => setProviderForm((current) => ({ ...current, basePrice: event.target.value }))}
               />
             </label>
 
@@ -390,7 +389,7 @@ export default function Workspace({
                 maxLength={2000} 
                 placeholder="Fale um pouco sobre o seu trabalho, anos de experiência e zonas de atendimento em Chimoio..."
                 value={providerForm.bio} 
-                onChange={(event) => setProviderForm((current: any) => ({ ...current, bio: event.target.value }))} 
+                onChange={(event) => setProviderForm((current) => ({ ...current, bio: event.target.value }))}
               />
             </label>
 

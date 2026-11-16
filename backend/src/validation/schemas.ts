@@ -1,6 +1,7 @@
 import Joi from "joi";
 import { isValidPrice } from "../domain/rules.js";
 import { SERVICE_CATEGORIES } from "../models/ServiceProvider.js";
+import { STORE_CATEGORIES } from "../models/Store.js";
 
 const requiredText = (label: string, max: number) =>
   Joi.string().trim().min(1).max(max).required().label(label);
@@ -41,18 +42,12 @@ export const validationMessages = {
 };
 
 // Listas oficiais permitidas para validação múltipla
-const STORE_CATEGORIES_LIST = [
-  "Imóveis", "Eletrónicos", "Automóveis", "Agricultura",
-  "Materiais de Construção", "Moda & Vestuário", "Alimentação & Bebidas",
-  "Saúde & Beleza", "Casa & Decoração", "Diversos"
-];
-
 export const requestSchemas = {
   registerStore: Joi.object({
     name: requiredText("O nome da loja", 160),
     slug: Joi.string().trim().pattern(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(180).required().label("O identificador da loja"),
     category: Joi.array()
-      .items(Joi.string().valid(...STORE_CATEGORIES_LIST))
+      .items(Joi.string().valid(...STORE_CATEGORIES))
       .min(1)
       .required()
       .label("As categorias da loja"),
@@ -72,7 +67,7 @@ createProduct: Joi.object({
     name: requiredText("O nome do produto", 160),
     description: requiredText("A descrição", 4000),
     price: catalogPrice("O preço"),
-    category: Joi.string().valid(...STORE_CATEGORIES_LIST).required().label("A categoria"),
+    category: Joi.string().valid(...STORE_CATEGORIES).required().label("A categoria"),
     variants: Joi.array().default([]).label("As variantes"),
     images: Joi.array().items(Joi.string().max(2000).label("O endereço da imagem")).max(12).default([]).label("As imagens").required().messages({
       "array.max": "Não pode enviar mais de {#limit} imagens.",
@@ -143,11 +138,36 @@ createProduct: Joi.object({
       otherwise: Joi.number().optional().label("O valor da proposta")
     })
   }),
+  createStoreConversation: Joi.object({
+    storeId: uuid("A loja"),
+    productId: uuid("O produto").optional(),
+    content: requiredText("A mensagem", 4000)
+  }),
+  createStoreMessage: Joi.object({
+    content: requiredText("A mensagem", 4000)
+  }),
   respondToProposal: Joi.object({
     action: Joi.string().valid("accept", "reject").required().label("A resposta")
   }),
   storeIdParams: Joi.object({
     id: uuid("O identificador da loja")
+  }),
+  storeSlugParams: Joi.object({
+    slug: Joi.string().trim()
+      .pattern(/^(?:[a-z0-9]+(?:-[a-z0-9]+)*|[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i)
+      .max(180)
+      .required()
+      .label("O identificador da loja")
+  }),
+  providerIdParams: Joi.object({
+    id: uuid("O identificador do prestador")
+  }),
+  storeConversationParams: Joi.object({
+    id: uuid("O identificador da conversa")
+  }),
+  publicReviewParams: Joi.object({
+    targetType: Joi.string().valid("store", "service_provider").required().label("O tipo de perfil"),
+    targetId: uuid("O perfil")
   }),
   productIdParams: Joi.object({
     id: uuid("O identificador do produto")
@@ -166,7 +186,7 @@ createProduct: Joi.object({
     name: requiredText("O nome da loja", 160),
     slug: Joi.string().trim().pattern(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(180).required().label("O identificador da loja"),
     category: Joi.array()
-      .items(Joi.string().valid(...STORE_CATEGORIES_LIST))
+      .items(Joi.string().valid(...STORE_CATEGORIES))
       .min(1)
       .required()
       .label("As categorias da loja"),
@@ -182,7 +202,7 @@ createProduct: Joi.object({
     name: requiredText("O nome do produto", 160),
     description: requiredText("A descrição", 4000),
     price: catalogPrice("O preço"),
-    category: Joi.string().valid(...STORE_CATEGORIES_LIST).required().label("A categoria"),
+    category: Joi.string().valid(...STORE_CATEGORIES).required().label("A categoria"),
     images: Joi.array().items(Joi.string().max(2000).label("O endereço da imagem")).max(12).default([]).label("As imagens").required(),
     minOrderQty: Joi.number().integer().min(1).max(100_000).default(1).label("A quantidade mínima")
   }),

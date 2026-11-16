@@ -5,6 +5,8 @@ import { Review } from "./Review.js";
 import { Service } from "./Service.js";
 import { ServiceProvider } from "./ServiceProvider.js";
 import { Store } from "./Store.js";
+import { StoreConversation } from "./StoreConversation.js";
+import { StoreMessage } from "./StoreMessage.js";
 import { User } from "./User.js";
 
 export function initializeAssociations(): void {
@@ -27,4 +29,12 @@ export function initializeAssociations(): void {
   User.hasMany(Message, { foreignKey: "senderId", as: "messages" });
   User.hasMany(Review, { foreignKey: "clientId", as: "reviews" });
   Review.belongsTo(User, { foreignKey: "clientId", as: "client" });
+  Store.hasMany(StoreConversation, { foreignKey: "storeId", as: "conversations" });
+  StoreConversation.belongsTo(Store, { foreignKey: "storeId", as: "store" });
+  User.hasMany(StoreConversation, { foreignKey: "clientId", as: "storeConversations" });
+  StoreConversation.belongsTo(User, { foreignKey: "clientId", as: "client" });
+  StoreConversation.belongsTo(Product, { foreignKey: "productId", as: "product" });
+  StoreConversation.hasMany(StoreMessage, { foreignKey: "conversationId", as: "messages" });
+  StoreMessage.belongsTo(StoreConversation, { foreignKey: "conversationId", as: "conversation" });
+  StoreMessage.belongsTo(User, { foreignKey: "senderId", as: "sender" });
 }

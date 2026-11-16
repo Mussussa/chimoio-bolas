@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from "react-leaflet";
 import type { MapStore } from "../../lib/types";
 import { getStoreLocations, type StoreLocation } from "../../lib/mapStores";
@@ -91,6 +92,7 @@ export default function MapExplorer({ stores, gps, loading, error }: Props) {
                       <span>{store.verified ? "Verificada" : "Pendente de verificação"}</span>
                       <span className="map-popup-category">{parseCategories(store.category).join(" · ")}</span>
                       <span>{store.address}</span>
+                      <Link to={`/lojas/${store.id}`}>Ver loja e produtos</Link>
                       <a href={directionsUrl(store, gps)} target="_blank" rel="noreferrer">
                         Abrir rota no Google Maps
                       </a>

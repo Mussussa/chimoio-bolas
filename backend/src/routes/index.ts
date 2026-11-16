@@ -3,13 +3,17 @@ import { adminRouter } from "./admin.js";
 import { merchantRouter } from "./merchant.js";
 import { negotiationsRouter } from "./negotiations.js";
 import { profileRouter } from "./profile.js";
+import { publicRouter } from "./public.js";
 import { providerRouter } from "./provider.js";
 import { reviewsRouter } from "./reviews.js";
 import { servicesRouter } from "./services.js";
 import { storesRouter } from "./stores.js";
+import { storeConversationsRouter } from "./storeConversations.js";
 
 export const apiRouter = Router();
 
+apiRouter.use("/public", publicRouter);
+apiRouter.use("/store-conversations", storeConversationsRouter);
 // Agrupa os endpoints de perfil do utilizador.
 apiRouter.use("/profile", profileRouter);
 // Agrupa o perfil e o painel de gestão dos prestadores.

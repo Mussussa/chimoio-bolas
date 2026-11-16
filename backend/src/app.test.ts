@@ -53,6 +53,18 @@ describe("API Express", () => {
     expect(responses.map((response) => response.status)).toEqual([401, 401, 401, 401]);
   });
 
+  it("valida identificadores de páginas públicas e exige sessão para o chat de lojas", async () => {
+    const responses = await Promise.all([
+      request(app).get("/api/public/products/not-a-uuid"),
+      request(app).get("/api/public/providers/not-a-uuid"),
+      request(app).get("/api/public/stores/slug-com-espaços"),
+      request(app).get("/api/store-conversations"),
+      request(app).post("/api/store-conversations").send({ storeId: "11111111-1111-4111-8111-111111111111", content: "Olá" })
+    ]);
+
+    expect(responses.map((response) => response.status)).toEqual([400, 400, 400, 401, 401]);
+  });
+
   it("recusa alteração de preço sem sessão autenticada", async () => {
     const response = await request(app).patch("/api/products/11111111-1111-4111-8111-111111111111/price").send({ price: 1 });
     expect(response.status).toBe(401);

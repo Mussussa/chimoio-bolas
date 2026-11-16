@@ -1,7 +1,11 @@
+import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import type { MapStore, Product, Profile, Service, ServiceProvider, Store } from "../../lib/types";
+import type { ReviewPayload } from "../../lib/api";
 import MapExplorer from "./MapExplorer";
+import ReviewForm from "./ReviewForm";
 
-type MarketplaceProps = {
+type MarketplaceProps = Readonly<{
   stores: Store[];
   mapStores: MapStore[];
   products: Product[];
@@ -15,13 +19,15 @@ type MarketplaceProps = {
   mapLoading: boolean;
   mapError: string | null;
   priceDrafts: Record<string, string>;
+  onClearFilters: () => void;
   onSearchChange: (value: string) => void;
   onLocate: () => void;
   onClearLocation: () => void;
   onPriceChange: (productId: string, value: string) => void;
   onUpdatePrice: (productId: string) => void;
   onStartNegotiation: (serviceId: string) => void;
-};
+  onReview: (review: ReviewPayload) => Promise<boolean>;
+}>;
 
 // Função auxiliar para normalizar e converter categorias com segurança total de tipos
 function parseCategories(category: unknown): string[] {
@@ -55,10 +61,23 @@ export default function Marketplace({
   onSearchChange,
   onLocate,
   onClearLocation,
+  onClearFilters,
   onPriceChange,
   onUpdatePrice,
-  onStartNegotiation
+  onStartNegotiation,
+  onReview
 }: MarketplaceProps) {
+  const [activeTab, setActiveTab] = useState<"all" | "products" | "services" | "stores">("all");
+  const matchingStores = useMemo(() => stores.filter((store) => {
+    const categories = parseCategories(store.category);
+    const term = search.trim().toLocaleLowerCase();
+    return !term || `${store.name} ${categories.join(" ")} ${store.address} ${store.description}`.toLocaleLowerCase().includes(term);
+  }), [search, stores]);
+  const showProducts = activeTab === "all" || activeTab === "products";
+  const showServices = activeTab === "all" || activeTab === "services";
+  const showStores = activeTab === "all" || activeTab === "stores";
+  const hasResults = (showProducts && products.length > 0) || (showServices && services.length > 0) || (showStores && matchingStores.length > 0);
+
   return (
     <section className="market section" id="mercado">
       <div className="section-head">
@@ -76,24 +95,38 @@ export default function Marketplace({
           <button className="button button-outline" onClick={onLocate}>Usar GPS</button>
         </div>
       </div>
+      <nav className="catalog-tabs" aria-label="Filtrar ofertas">
+        <button type="button" className={activeTab === "all" ? "is-active" : ""} onClick={() => setActiveTab("all")}>Tudo</button>
+        <button type="button" className={activeTab === "products" ? "is-active" : ""} onClick={() => setActiveTab("products")}>Produtos</button>
+        <button type="button" className={activeTab === "services" ? "is-active" : ""} onClick={() => setActiveTab("services")}>Serviços</button>
+        <button type="button" className={activeTab === "stores" ? "is-active" : ""} onClick={() => setActiveTab("stores")}>Lojas no Mapa</button>
+      </nav>
+      <div className="directory-links">
+        <Link to="/lojas">Ver todas as lojas</Link>
+        <Link to="/servicos">Ver todos os serviços e prestadores</Link>
+      </div>
       {nearby && coordinates && (
         <p className="geo-note">
           Distâncias calculadas no navegador a partir da sua localização. <button onClick={onClearLocation}>Limpar</button>
         </p>
       )}
-      <MapExplorer stores={mapStores} gps={coordinates} loading={mapLoading} error={mapError} />
+      {(activeTab === "all" || activeTab === "stores") && <MapExplorer stores={mapStores} gps={coordinates} loading={mapLoading} error={mapError} />}
       <div className="catalog-grid">
-        {products.map((product) => {
+        {showProducts && products.map((product) => {
           const store = stores.find((item) => item.id === product.store_id);
           return (
             <article className="listing-card" key={product.id}>
               <span className="tag">PRODUTO · {product.category}</span>
-              <h3>{product.name}</h3>
+              {product.images?.[0] && <img className="service-listing-image" src={product.images[0]} alt={product.name} />}
+              <h3><Link to={`/produtos/${product.id}`}>{product.name}</Link></h3>
               <p>{product.description}</p>
               <div className="listing-foot">
                 <b>{Number(product.price).toLocaleString("pt-MZ")} MT</b>
-                <span>{store?.name ?? "Loja local"}</span>
+                {store ? <Link to={`/lojas/${store.slug}`}>{store.name}</Link> : <span>Loja local</span>}
               </div>
+              {store?.address && <p className="listing-location">{store.address}{coordinates && store.latitude !== null && store.longitude !== null &&
+                Number.isFinite(Number(store.latitude)) && Number.isFinite(Number(store.longitude)) &&
+                ` · ${distance(coordinates[0], coordinates[1], Number(store.latitude), Number(store.longitude)).toFixed(1)} km`}</p>}
               {store?.owner_id === profile?.id && (
                 <div className="price-editor">
                   <input 
@@ -111,44 +144,40 @@ export default function Marketplace({
           );
         })}
 
-        {services.map((service) => {
+        <div id="servicos" className="catalog-section-anchor" />
+        {showServices && services.map((service) => {
           const provider = providers.find((item) => item.id === service.provider_id);
           return (
             <article className="listing-card service-card" key={service.id}>
               <span className="tag tag-green">SERVIÇO · NA PLATAFORMA</span>
               {service.images?.[0] && <img className="service-listing-image" src={service.images[0]} alt={service.title} />}
-              <h3>{service.title}</h3>
+              <h3><Link to={`/prestadores/${service.provider_id}`}>{service.title}</Link></h3>
               <p>{service.description}</p>
               <div className="listing-foot">
                 <b>{Number(service.price).toLocaleString("pt-MZ")} MT</b>
-                <span>{service.category || provider?.category} · {service.delivery_time}</span>
+                <Link to={`/prestadores/${service.provider_id}`}>{provider?.category.join(", ") || service.category} · Ver prestador</Link>
               </div>
               {profile?.role === "client" && (
-                <button className="button button-dark full-button" disabled={busy} onClick={() => onStartNegotiation(service.id)}>
-                  Iniciar negociação
-                </button>
+                <>
+                  <button className="button button-dark full-button" disabled={busy} onClick={() => onStartNegotiation(service.id)}>
+                    Iniciar negociação
+                  </button>
+                  {provider && <ReviewForm targetType="service_provider" targetId={provider.id} targetName={provider.category.join(", ")} busy={busy} onSubmit={onReview} />}
+                </>
               )}
             </article>
           );
         })}
 
-        {stores
-          .filter((store) => {
-            const cats = parseCategories(store.category);
-            const searchLower = search.toLowerCase();
-            return !search || `${store.name} ${cats.join(" ")}`.toLowerCase().includes(searchLower);
-          })
-          .map((store) => {
+        {showStores && matchingStores.map((store) => {
             const cats = parseCategories(store.category);
             return (
               <article className="listing-card store-card" key={store.id}>
-                <span 
-                  className={`tag ${store.verified ? "" : "tag-pending"}`} 
-                  style={{ backgroundColor: store.verified ? undefined : "#ff9800", color: "#fff" }}
-                >
-                  {store.verified ? "✅ LOJA VERIFICADA" : "⏳ PENDENTE DE VERIFICAÇÃO"} · {cats.join(" · ")}
+                <span className={`tag ${store.verified ? "tag-verified" : "tag-new-store"}`}>
+                  {store.verified ? "Loja verificada ✓" : "Nova loja"} · {cats.join(" · ")}
                 </span>
-                <h3>{store.name}</h3>
+                {store.logo_url && <img className="service-listing-image store-listing-logo" src={store.logo_url} alt={`Logótipo de ${store.name}`} />}
+                <h3><Link to={`/lojas/${store.slug}`}>{store.name}</Link></h3>
                 <p>{store.description}</p>
                 <div className="listing-foot">
                   <span>{store.address}</span>
@@ -157,12 +186,20 @@ export default function Marketplace({
                     <b>{distance(coordinates[0], coordinates[1], Number(store.latitude), Number(store.longitude)).toFixed(1)} km</b>
                   )}
                 </div>
+                {profile?.role === "client" && store.verified && (
+                  <ReviewForm targetType="store" targetId={store.id} targetName={store.name} busy={busy} onSubmit={onReview} />
+                )}
               </article>
             );
-          })}
+        })}
 
-        {!products.length && !services.length && !stores.length && (
-          <p className="empty">Ainda não há ofertas públicas. Liga o Supabase local e executa as migrations para iniciar.</p>
+        {!hasResults && (
+          <div className="empty">
+            <p>{search ? `Não encontrámos ofertas para “${search}”.` : "Ainda não há ofertas nesta categoria."}</p>
+            <button type="button" className="button button-outline" onClick={() => { setActiveTab("all"); onClearFilters(); }}>
+              Limpar filtros
+            </button>
+          </div>
         )}
       </div>
     </section>

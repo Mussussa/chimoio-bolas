@@ -10,13 +10,27 @@ import type {
   Profile,
   ProviderForm,
   Service,
-  ServiceForm,
   ServiceProvider,
   Store,
   StoreForm
 } from "./types";
 
 // O catálogo público usa Supabase; operações autenticadas passam pelo Express.
+function normalizeImageList(images: unknown): string[] {
+  if (Array.isArray(images)) return images.filter((image): image is string => typeof image === "string" && image.trim().length > 0);
+  if (typeof images !== "string" || !images.trim()) return [];
+
+  try {
+    const parsed: unknown = JSON.parse(images);
+    return Array.isArray(parsed)
+      ? parsed.filter((image): image is string => typeof image === "string" && image.trim().length > 0)
+      : [];
+  } catch (error) {
+    if (error instanceof SyntaxError) return [];
+    throw error;
+  }
+}
+
 export async function loadCatalog(): Promise<Catalog> {
   if (!supabase) {
     throw new Error("Configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no frontend/.env.local.");
@@ -43,7 +57,10 @@ export async function loadCatalog(): Promise<Catalog> {
   return {
     stores: (storeResults.data ?? []) as Store[],
     mapStores,
-    products: (productResults.data ?? []) as Product[],
+    products: ((productResults.data ?? []) as Product[]).map((product) => ({
+      ...product,
+      images: normalizeImageList(product.images)
+    })),
     providers: (providerResults.data ?? []) as ServiceProvider[],
     services: (serviceResults.data ?? []) as Service[]
   };
@@ -57,6 +74,30 @@ export async function loadProfile(session: Session): Promise<Profile> {
       ? { category: normalizeStoreCategories(profile.store.category) }
       : profile.store
   };
+}
+
+export function updateProfile(session: Session, body: ProfileUpdate) {
+  return api<Pick<Profile, "id" | "name" | "email" | "phone" | "avatarUrl" | "role">>(
+    "/profile/me",
+    session,
+    { method: "PATCH", body }
+  );
+}
+
+export function createReview(session: Session, body: ReviewPayload) {
+  return api<{ review: { id: string; targetType: ReviewPayload["targetType"]; targetId: string; rating: number; comment: string } }>(
+    "/reviews",
+    session,
+    { method: "POST", body }
+  );
+}
+
+export function verifyStore(session: Session, storeId: string) {
+  return api<{ store: { id: string; verified: boolean } }>(
+    `/admin/stores/${encodeURIComponent(storeId)}/verify`,
+    session,
+    { method: "POST", body: {} }
+  );
 }
 
 export type MerchantStore = {
@@ -132,6 +173,115 @@ export type ProviderServicePayload = {
   images: string[];
 };
 
+export type ProfileUpdate = Pick<Profile, "name" | "phone" | "avatarUrl">;
+
+export type ReviewPayload = {
+  targetType: "store" | "service_provider";
+  targetId: string;
+  rating: number;
+  comment: string;
+};
+
+export type PublicReview = {
+  id: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+};
+
+export type PublicStoreDetail = {
+  store: MerchantStore;
+  products: MerchantProduct[];
+  reviews: PublicReview[];
+};
+
+export type PublicProductDetail = {
+  product: MerchantProduct;
+  store: MerchantStore;
+};
+
+export type PublicProviderDetail = {
+  provider: ProviderAccount;
+  profile: { id: string; name: string; avatarUrl: string | null } | null;
+  services: ProviderService[];
+  reviews: PublicReview[];
+};
+
+export type StoreConversationMessage = {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  content: string;
+  createdAt: string;
+  sender?: { id: string; name: string; avatarUrl: string | null };
+};
+
+export type StoreConversation = {
+  id: string;
+  storeId: string;
+  clientId: string;
+  productId: string | null;
+  createdAt: string;
+  store: Pick<MerchantStore, "id" | "name" | "slug" | "logoUrl">;
+  product: { id: string; name: string } | null;
+  messages: StoreConversationMessage[];
+};
+
+export async function loadPublicStore(slug: string): Promise<PublicStoreDetail> {
+  const result = await api<PublicStoreDetail>(`/public/stores/${encodeURIComponent(slug)}`);
+  return {
+    ...result,
+    store: { ...result.store, category: normalizeStoreCategories(result.store.category) },
+    products: result.products.map((product) => ({ ...product, images: normalizeImageList(product.images) }))
+  };
+}
+
+export async function loadPublicProduct(productId: string): Promise<PublicProductDetail> {
+  const result = await api<PublicProductDetail>(`/public/products/${encodeURIComponent(productId)}`);
+  return { ...result, product: { ...result.product, images: normalizeImageList(result.product.images) } };
+}
+
+export async function loadPublicProvider(providerId: string): Promise<PublicProviderDetail> {
+  return api<PublicProviderDetail>(`/public/providers/${encodeURIComponent(providerId)}`);
+}
+
+export async function startStoreConversation(session: Session, body: { storeId: string; productId?: string; content: string }) {
+  return api<{ conversation: StoreConversation; message: StoreConversationMessage }>("/store-conversations", session, { method: "POST", body });
+}
+
+export async function loadStoreConversations(session: Session): Promise<StoreConversation[]> {
+  const result = await api<{ conversations: StoreConversation[] }>("/store-conversations", session);
+  return result.conversations;
+}
+
+export async function loadStoreMessages(session: Session, conversationId: string): Promise<StoreConversationMessage[]> {
+  const result = await api<{ messages: StoreConversationMessage[] }>(
+    `/store-conversations/${encodeURIComponent(conversationId)}/messages`,
+    session
+  );
+  return result.messages;
+}
+
+export function sendStoreMessage(session: Session, conversationId: string, content: string) {
+  return api<{ message: StoreConversationMessage }>(
+    `/store-conversations/${encodeURIComponent(conversationId)}/messages`,
+    session,
+    { method: "POST", body: { content } }
+  );
+}
+
+export type ApiHealth = {
+  api: "online";
+  database: "connected";
+};
+
+export async function checkApiHealth(): Promise<boolean> {
+  const response = await fetch("/api/health");
+  if (!response.ok) return false;
+  const result = await response.json() as { success?: boolean; data?: ApiHealth };
+  return result.success === true && result.data?.api === "online" && result.data.database === "connected";
+}
+
 export async function loadMerchantStore(session: Session): Promise<MerchantStore> {
   const result = await api<{ store: Omit<MerchantStore, "category"> & { category: unknown } }>("/merchant/store/me", session);
   return { ...result.store, category: normalizeStoreCategories(result.store.category) };
@@ -146,7 +296,7 @@ export async function updateMerchantStore(session: Session, store: Omit<Merchant
 
 export async function loadMerchantProducts(session: Session): Promise<MerchantProduct[]> {
   const result = await api<{ products: MerchantProduct[] }>("/merchant/products/me", session);
-  return result.products;
+  return result.products.map((product) => ({ ...product, images: normalizeImageList(product.images) }));
 }
 
 export function updateMerchantProduct(session: Session, product: MerchantProduct) {
@@ -251,8 +401,8 @@ export function registerProvider(session: Session, body: ProviderForm) {
   return api<{ provider: ProviderAccount }>("/providers/register", session, { method: "POST", body });
 }
 
-export function publishService(session: Session, body: ServiceForm) {
-  return api<{ service: Service }>("/services", session, { method: "POST", body });
+export function publishService(session: Session, body: ProviderServicePayload) {
+  return api<{ service: ProviderService }>("/services", session, { method: "POST", body });
 }
 
 export function registerStore(session: Session, body: StoreForm) {
@@ -260,11 +410,11 @@ export function registerStore(session: Session, body: StoreForm) {
 }
 
 export function createProduct(session: Session, body: ProductForm & { image?: string; images?: string[] }) {
-  return api("/products", session, { method: "POST", body });
+  return api<{ product: Product }>("/products", session, { method: "POST", body });
 }
 
 export function updateProductPrice(session: Session, productId: string, price: number) {
-  return api(`/products/${productId}/price`, session, { method: "PATCH", body: { price } });
+  return api<{ product: Product }>(`/products/${encodeURIComponent(productId)}/price`, session, { method: "PATCH", body: { price } });
 }
 
 export function startNegotiation(session: Session, serviceId: string) {
@@ -287,11 +437,11 @@ export function completeNegotiation(session: Session, negotiationId: string) {
   return api(`/negotiations/${negotiationId}/complete`, session, { method: "POST", body: {} });
 }
 
-export async function api<T>(path: string, session: Session, options: { method?: string; body?: unknown } = {}): Promise<T> {
+export async function api<T>(path: string, session?: Session, options: { method?: string; body?: unknown } = {}): Promise<T> {
   const response = await fetch(`/api${path}`, {
     method: options.method ?? "GET",
     headers: {
-      authorization: `Bearer ${session.access_token}`,
+      ...(session ? { authorization: `Bearer ${session.access_token}` } : {}),
       ...(options.body === undefined ? {} : { "content-type": "application/json" })
     },
     ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) })

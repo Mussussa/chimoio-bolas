@@ -90,21 +90,19 @@ export default function MerchantDashboard({ session, refreshKey, children }: Mer
     setUploadingLogo(true);
     setError(null);
     try {
-      // Cria um nome limpo e organizado para o ficheiro com base na loja e data/id
-      const storeNameSlug = storeDraft?.name 
-        ? storeDraft.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") 
-        : session.user.id;
+      const storeNameSlug = storeDraft?.name
+        ? storeDraft.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
+        : "loja";
+      const filePath = `${session.user.id}/${storeNameSlug}-${crypto.randomUUID()}.${extension}`;
       
-      const filePath = `store-logos/${storeNameSlug}-${Date.now()}.${extension}`;
-      
-      // Faz o upload para o bucket 'products' existente e público
+      // O primeiro segmento do caminho identifica o proprietário segundo a política do bucket.
       const { error: uploadError } = await supabase.storage
-        .from("products")
-        .upload(filePath, file, { cacheControl: "3600", contentType: file.type, upsert: true });
+        .from("store-logos")
+        .upload(filePath, file, { cacheControl: "3600", contentType: file.type, upsert: false });
       
       if (uploadError) throw uploadError;
 
-      const { data } = supabase.storage.from("products").getPublicUrl(filePath);
+      const { data } = supabase.storage.from("store-logos").getPublicUrl(filePath);
       setMessage("Logótipo carregado. Guarda as alterações para o associar à loja.");
       return data.publicUrl;
     } finally {

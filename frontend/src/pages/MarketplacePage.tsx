@@ -1,6 +1,9 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
+import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import AdminDashboard from "./AdminDashboard";
 import Account from "../components/auth/Account";
+import ProfileSettingsForm from "../components/auth/ProfileSettingsForm";
 import { Hero, NoticeBanner, SiteFooter, SiteHeader } from "../components/layout/SiteChrome";
 import Marketplace from "../components/marketplace/Marketplace";
 import Negotiations from "../components/negotiations/Negotiations";
@@ -8,140 +11,79 @@ import Workspace from "../components/workspace/Workspace";
 import MerchantDashboard from "./MerchantDashboard";
 import ProviderDashboard from "./ProviderDashboard";
 import {
-  completeNegotiation as completeNegotiationRequest,
+  checkApiHealth,
   createProduct as createProductRequest,
-  loadCatalog as fetchCatalog,
-  loadNegotiations as fetchNegotiations,
-  loadProfile,
+  createReview as createReviewRequest,
   registerProvider as registerProviderRequest,
   registerStore as registerStoreRequest,
-  respondToProposal as respondToProposalRequest,
-  sendNegotiationMessage,
-  startNegotiation as startNegotiationRequest,
-  updateProductPrice as updateProductPriceRequest
+  updateProductPrice as updateProductPriceRequest,
+  verifyStore as verifyStoreRequest
 } from "../lib/api";
-import { supabase } from "../lib/supabase";
-import type {
-  AuthForm,
-  Catalog,
-  MessageForm,
-  Negotiation,
-  Notice,
-  ProductForm,
-  Profile,
-  ProviderForm,
-  StoreForm
-} from "../lib/types";
+import type { Notice, ProductForm, ProviderForm, StoreForm } from "../lib/types";
+import useAuth from "../hooks/useAuth";
+import useCatalog from "../hooks/useCatalog";
+import useNegotiations from "../hooks/useNegotiations";
+import useStoreConversations from "../hooks/useStoreConversations";
+import {
+  ProductDetailPage,
+  ProviderDetailPage,
+  ServicesDirectoryPage,
+  StoreConversationPage,
+  StoreDetailPage,
+  StoresDirectoryPage
+} from "./PublicPages";
 
-const emptyCatalog: Catalog = { stores: [], mapStores: [], products: [], providers: [], services: [] };
+type StoreRegistration = StoreForm & { neighborhood?: string };
 
-export default function App() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [catalog, setCatalog] = useState<Catalog>(emptyCatalog);
-  const [catalogStatus, setCatalogStatus] = useState<"loading" | "ready" | "error">("loading");
-  const [catalogError, setCatalogError] = useState<string | null>(null);
-  const [negotiations, setNegotiations] = useState<Negotiation[]>([]);
+export default function MarketplacePage() {
   const [notice, setNotice] = useState<Notice>(null);
   const [busy, setBusy] = useState(false);
-  const [search, setSearch] = useState("");
-  const [nearby, setNearby] = useState(false);
-  const [coordinates, setCoordinates] = useState<[number, number] | null>(null);
-  const [authForm, setAuthForm] = useState<AuthForm>({ email: "", password: "" });
-  const [authMode, setAuthMode] = useState<"login" | "signup">("login");
-  const [providerForm, setProviderForm] = useState<ProviderForm>({ category: [], bio: "", basePrice: "" });
-  const [storeForm, setStoreForm] = useState<StoreForm>({ name: "", slug: "", category: [], description: "", address: "", latitude: "-19.1164", longitude: "33.4833" });
-  const [productForm, setProductForm] = useState<ProductForm>({ name: "", description: "", price: "", category: "" });
+  const [apiHealth, setApiHealth] = useState<"checking" | "online" | "offline">("checking");
   const [priceDrafts, setPriceDrafts] = useState<Record<string, string>>({});
-  const [selectedNegotiation, setSelectedNegotiation] = useState("");
-  const [messageForm, setMessageForm] = useState<MessageForm>({ content: "", proposalAmount: "" });
-
-  const loadCatalog = useCallback(async () => {
-    setCatalogStatus("loading");
-    setCatalogError(null);
-    try {
-      setCatalog(await fetchCatalog());
-      setCatalogStatus("ready");
-    } catch (error) {
-      const message = (error as Error).message;
-      setCatalogError(message);
-      setCatalogStatus("error");
-      setNotice({ text: message, error: true });
-    }
-  }, []);
-
-  const loadUserNegotiations = useCallback(async (currentSession: Session) => {
-    setNegotiations(await fetchNegotiations(currentSession));
-  }, []);
+  const navigate = useNavigate();
+  const dismissNotice = useCallback(() => setNotice(null), []);
+  const auth = useAuth({ setNotice, setBusy });
+  const catalogState = useCatalog(setNotice);
+  const negotiationState = useNegotiations({ session: auth.session, setNotice, setBusy });
+  const storeConversationState = useStoreConversations({ session: auth.session, setNotice, setBusy });
+  const { session, profile, setProfile } = auth;
+  const {
+    catalog, catalogStatus, catalogError, search, setSearch, nearby, setNearby,
+    coordinates, setCoordinates, visibleProducts, visibleServices, loadCatalog, locate
+  } = catalogState;
+  const {
+    negotiations, pendingCount, selectedNegotiation, messageForm,
+    start: startNegotiation, sendMessage, updateMessageField,
+    respond: respondToProposal, complete: completeNegotiation
+  } = negotiationState;
+  const openStoreConversation = useCallback((id: string) => {
+    void storeConversationState.open(id);
+  }, [storeConversationState.open]);
+  const sendStoreConversationMessage = useCallback((event: FormEvent<HTMLFormElement>, id: string) => {
+    void storeConversationState.send(event, id);
+  }, [storeConversationState.send]);
 
   useEffect(() => {
     void loadCatalog();
-    if (!supabase) return;
-    void supabase.auth.getSession().then(({ data }) => setSession(data.session));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
-      setSession(currentSession);
-      setProfile(null);
-      setNegotiations([]);
-    });
-    return () => subscription.unsubscribe();
   }, [loadCatalog]);
 
   useEffect(() => {
-    if (!session) return;
     let active = true;
-    Promise.all([loadProfile(session), loadUserNegotiations(session)])
-      .then(([nextProfile]) => { if (active) setProfile(nextProfile); })
-      .catch((error: Error) => { if (active) setNotice({ text: error.message, error: true }); });
-    return () => { active = false; };
-  }, [session, loadUserNegotiations]);
-
-  const providerIds = useMemo(() => new Set(catalog.providers.map((provider) => provider.id)), [catalog.providers]);
-  const visibleProducts = useMemo(() => {
-    const term = search.trim().toLocaleLowerCase();
-    return catalog.products.filter((product) => !term || `${product.name} ${product.description} ${product.category}`.toLocaleLowerCase().includes(term));
-  }, [catalog.products, search]);
-  const visibleServices = useMemo(() => catalog.services.filter((service) => {
-    const provider = catalog.providers.find((item) => item.id === service.provider_id);
-    const term = search.trim().toLocaleLowerCase();
-    return providerIds.has(service.provider_id) && (!term || `${service.title} ${service.description} ${service.category ?? ""} ${provider?.category ?? ""}`.toLocaleLowerCase().includes(term));
-  }), [catalog.providers, catalog.services, providerIds, search]);
-
-async function submitAuth(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!supabase) return setNotice({ text: "Supabase local não está configurado.", error: true });
-    setBusy(true);
-    setNotice(null);
-    try {
-      if (authMode === "login") {
-        const result = await supabase.auth.signInWithPassword({
-          email: authForm.email,
-          password: authForm.password
-        });
-        if (result.error) throw result.error;
-      } else {
-        const result = await supabase.auth.signUp({
-          email: authForm.email,
-          password: authForm.password,
-          options: { data: { phone: `+258${authForm.phone}` } }
-        });
-
-        if (result.error) throw result.error;
-
-        if (!result.data.session) {
-          setNotice({ text: "Conta criada com sucesso. Confirme o e-mail para iniciar sessão." });
-        }
+    const refreshApiHealth = async () => {
+      try {
+        const isHealthy = await checkApiHealth();
+        if (active) setApiHealth(isHealthy ? "online" : "offline");
+      } catch {
+        if (active) setApiHealth("offline");
       }
-    } catch (error) {
-      setNotice({ text: (error as Error).message, error: true });
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function signOut() {
-    const result = await supabase?.auth.signOut();
-    if (result?.error) setNotice({ text: result.error.message, error: true });
-  }
+    };
+    void refreshApiHealth();
+    const interval = window.setInterval(() => void refreshApiHealth(), 30_000);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+    };
+  }, []);
 
   async function runApi<T>(request: (currentSession: Session) => Promise<T>): Promise<T | null> {
     if (!session) {
@@ -162,48 +104,53 @@ async function submitAuth(event: FormEvent<HTMLFormElement>) {
     }
   }
 
-  async function registerProvider(event: FormEvent<HTMLFormElement>) {
+  async function registerProvider(event: FormEvent<HTMLFormElement>, providerForm: ProviderForm): Promise<boolean> {
     event.preventDefault();
     const result = await runApi((currentSession) => registerProviderRequest(currentSession, providerForm));
     if (result) {
       setProfile((current) => current ? { ...current, role: "prestador" } : current);
       await loadCatalog();
+      await navigate("/painel");
+      return true;
     }
+    return false;
   }
 
-async function registerStore(event: FormEvent<HTMLFormElement>) {
+  async function registerStore(event: FormEvent<HTMLFormElement>, storeForm: StoreRegistration): Promise<boolean> {
     event.preventDefault();
     const result = await runApi((currentSession) => registerStoreRequest(currentSession, storeForm));
     if (result) {
-      setProfile((current) => current
-        ? { 
-            ...current, 
-            role: "lojista", 
-            store: { 
-              id: (result as any).id || "",
-              name: storeForm.name,
-              slug: storeForm.slug,
-              category: storeForm.category,
-              description: storeForm.description,
-              address: storeForm.address,
-              latitude: storeForm.latitude ? Number(storeForm.latitude) : null,
-              longitude: storeForm.longitude ? Number(storeForm.longitude) : null,
-              verified: false
-            } 
-          } 
-        : current);
+      setProfile((current) => current ? {
+        ...current,
+        role: "lojista",
+        store: {
+          id: result.store.id,
+          name: storeForm.name,
+          slug: storeForm.slug,
+          category: storeForm.category,
+          description: storeForm.description,
+          address: storeForm.address,
+          latitude: storeForm.latitude ? Number(storeForm.latitude) : null,
+          longitude: storeForm.longitude ? Number(storeForm.longitude) : null,
+          verified: false
+        }
+      } : current);
       setNotice({ text: "Loja criada. Um administrador deve verificá-la antes da listagem pública." });
-      await loadCatalog(); // Atualiza também o catálogo geral para a loja aparecer no mapa se necessário
+      await loadCatalog();
+      await navigate("/painel");
+      return true;
     }
+    return false;
   }
 
-  async function createProduct(event: FormEvent<HTMLFormElement>, submittedProduct = productForm) {
+  async function createProduct(event: FormEvent<HTMLFormElement>, product: ProductForm & { images?: string[] }): Promise<boolean> {
     event.preventDefault();
-    const result = await runApi((currentSession) => createProductRequest(currentSession, submittedProduct));
+    const result = await runApi((currentSession) => createProductRequest(currentSession, product));
     if (result) {
-      setProductForm({ name: "", description: "", price: "", category: "" });
       await loadCatalog();
+      return true;
     }
+    return false;
   }
 
   async function updateProductPrice(productId: string) {
@@ -212,128 +159,188 @@ async function registerStore(event: FormEvent<HTMLFormElement>) {
     if (result) await loadCatalog();
   }
 
-  async function startNegotiation(serviceId: string) {
-    const result = await runApi((currentSession) => startNegotiationRequest(currentSession, serviceId));
-    if (result && session) {
-      await loadUserNegotiations(session);
-      setSelectedNegotiation(result.negotiation.id);
-    }
+  async function createReview(review: Parameters<typeof createReviewRequest>[1]): Promise<boolean> {
+    const result = await runApi((currentSession) => createReviewRequest(currentSession, review));
+    return Boolean(result);
   }
 
-  async function sendMessage(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!selectedNegotiation) return;
-    const isProposal = messageForm.proposalAmount.trim() !== "";
-    const result = await runApi((currentSession) => sendNegotiationMessage(currentSession, selectedNegotiation, {
-      content: messageForm.content,
-      messageType: isProposal ? "proposal" : "text",
-      ...(isProposal ? { proposalAmount: Number(messageForm.proposalAmount) } : {})
-    }));
-    if (result && session) {
-      setMessageForm({ content: "", proposalAmount: "" });
-      await loadUserNegotiations(session);
-    }
+  async function verifyStore(storeId: string) {
+    const result = await runApi((currentSession) => verifyStoreRequest(currentSession, storeId));
+    if (result) await loadCatalog();
   }
 
-  function updateMessageField(negotiationId: string, field: "content" | "proposalAmount", value: string) {
-    if (selectedNegotiation !== negotiationId) {
-      setSelectedNegotiation(negotiationId);
-      setMessageForm({ content: field === "content" ? value : "", proposalAmount: field === "proposalAmount" ? value : "" });
-      return;
-    }
-    setMessageForm((current) => ({ ...current, [field]: value }));
+  function updateAccountProfile(values: { name: string; phone: string | null }) {
+    return auth.updateAccountProfile(values);
   }
 
-  async function respondToProposal(negotiationId: string, messageId: string, action: "accept" | "reject") {
-    const result = await runApi((currentSession) => respondToProposalRequest(currentSession, negotiationId, messageId, action));
-    if (result && session) await loadUserNegotiations(session);
+  async function startServiceNegotiation(serviceId: string) {
+    if (await startNegotiation(serviceId)) await navigate("/negociacoes");
   }
 
-  function locate() {
-    if (!navigator.geolocation) return setNotice({ text: "GPS não está disponível neste dispositivo.", error: true });
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) => { setCoordinates([coords.latitude, coords.longitude]); setNearby(true); },
-      () => setNotice({ text: "Não foi possível obter a localização. Verifica a permissão de GPS.", error: true }),
-      { enableHighAccuracy: true, maximumAge: 60_000, timeout: 10_000 }
+  async function startStoreConversation(storeId: string, content: string, productId?: string) {
+    const conversationId = await storeConversationState.start(storeId, content, productId);
+    if (conversationId) return conversationId;
+    return null;
+  }
+
+  function renderWorkspace() {
+    if (!profile || !session) return null;
+    return (
+      <Workspace
+        session={session}
+        profile={profile}
+        busy={busy}
+        onRegisterStore={registerStore}
+        onCreateProduct={createProduct}
+        onRegisterProvider={registerProvider}
+      />
     );
   }
 
-  async function completeNegotiation(negotiationId: string) {
-    const result = await runApi((currentSession) => completeNegotiationRequest(currentSession, negotiationId));
-    if (result && session) await loadUserNegotiations(session);
+  function renderDashboard() {
+    if (!profile || !session) {
+      return <section className="section"><p className="empty">Inicia sessão para aceder à área de gestão.</p></section>;
+    }
+    if (profile.role === "lojista") {
+      return <MerchantDashboard session={session} refreshKey={catalog.products}>{renderWorkspace()}</MerchantDashboard>;
+    }
+    if (profile.role === "prestador") {
+      return (
+        <ProviderDashboard
+          session={session}
+          refreshCatalog={loadCatalog}
+          onProfileChange={(changes) => setProfile((current) => current ? { ...current, ...changes } : current)}
+        />
+      );
+    }
+    if (profile.role === "admin") {
+      return <AdminDashboard stores={catalog.mapStores} busy={busy} onVerify={(storeId) => void verifyStore(storeId)} />;
+    }
+    return renderWorkspace();
   }
-
-  const isMerchant = profile?.role === "lojista";
-  const isProvider = profile?.role === "prestador";
-  const workspace = profile && <Workspace
-    profile={profile}
-    busy={busy}
-    providerForm={providerForm}
-    storeForm={storeForm}
-    productForm={productForm}
-    setProviderForm={setProviderForm}
-    setStoreForm={setStoreForm}
-    setProductForm={setProductForm}
-    registerStore={registerStore}
-    createProduct={createProduct}
-    registerProvider={registerProvider}
-  />;
 
   return (
     <main className="app-shell">
-      <NoticeBanner notice={notice} onDismiss={() => setNotice(null)} />
-      <SiteHeader profile={profile} onSignOut={() => void signOut()} />
-      {!isMerchant && !isProvider && <>
-        <Hero />
-        <Marketplace
-        stores={catalog.stores}
-        mapStores={catalog.mapStores}
-        products={visibleProducts}
-        services={visibleServices}
-        providers={catalog.providers}
+      <NoticeBanner notice={notice} onDismiss={dismissNotice} />
+      <SiteHeader
         profile={profile}
-        busy={busy}
-        search={search}
-        nearby={nearby}
-        coordinates={coordinates}
-        mapLoading={catalogStatus === "loading"}
-        mapError={catalogStatus === "error" ? catalogError : null}
-        priceDrafts={priceDrafts}
-        onSearchChange={setSearch}
-        onLocate={locate}
-        onClearLocation={() => setNearby(false)}
-        onPriceChange={(productId, value) => setPriceDrafts((current) => ({ ...current, [productId]: value }))}
-        onUpdatePrice={(productId) => void updateProductPrice(productId)}
-        onStartNegotiation={(serviceId) => void startNegotiation(serviceId)}
-        />
-        <Negotiations
-        negotiations={negotiations}
-        sessionExists={Boolean(session)}
-        profile={profile}
-        busy={busy}
-        selectedNegotiation={selectedNegotiation}
-        messageForm={messageForm}
-        onSelectField={updateMessageField}
-        onSendMessage={sendMessage}
-        onRespondToProposal={(negotiationId, messageId, action) => void respondToProposal(negotiationId, messageId, action)}
-        onComplete={(negotiationId) => void completeNegotiation(negotiationId)}
-        />
-        {profile && !isMerchant && workspace}
-      </>}
-      {isMerchant && session && <MerchantDashboard session={session} refreshKey={catalog.products}>{workspace}</MerchantDashboard>}
-      {isProvider && session && <ProviderDashboard
-        session={session}
-        refreshCatalog={loadCatalog}
-        onProfileChange={(changes) => setProfile((current) => current ? { ...current, ...changes } : current)}
-      />}
-      {!session && <Account
-        authMode={authMode}
-        authForm={authForm}
-        busy={busy}
-        setAuthForm={setAuthForm}
-        onSubmit={submitAuth}
-        onToggleMode={() => setAuthMode((current) => current === "login" ? "signup" : "login")}
-      />}
+        apiHealth={apiHealth}
+        pendingNegotiations={pendingCount}
+        showStoreConversations={profile?.role === "client" || profile?.role === "lojista"}
+        onSignOut={() => void auth.signOut()}
+      />
+      <Routes>
+        <Route path="/" element={
+          <>
+            <Hero />
+            <Marketplace
+              stores={catalog.stores}
+              mapStores={catalog.mapStores}
+              products={visibleProducts}
+              services={visibleServices}
+              providers={catalog.providers}
+              profile={profile}
+              busy={busy}
+              search={search}
+              nearby={nearby}
+              coordinates={coordinates}
+              mapLoading={catalogStatus === "loading"}
+              mapError={catalogStatus === "error" ? catalogError : null}
+              priceDrafts={priceDrafts}
+              onSearchChange={setSearch}
+              onLocate={locate}
+              onClearLocation={() => { setNearby(false); setCoordinates(null); }}
+              onClearFilters={() => setSearch("")}
+              onPriceChange={(productId, value) => setPriceDrafts((current) => ({ ...current, [productId]: value }))}
+              onUpdatePrice={(productId) => void updateProductPrice(productId)}
+              onStartNegotiation={(serviceId) => void startServiceNegotiation(serviceId)}
+              onReview={createReview}
+            />
+          </>
+        } />
+        <Route path="/negociacoes" element={
+          <Negotiations
+            negotiations={negotiations}
+            sessionExists={Boolean(session)}
+            profile={profile}
+            busy={busy}
+            selectedNegotiation={selectedNegotiation}
+            messageForm={messageForm}
+            onSelectField={updateMessageField}
+            onSendMessage={sendMessage}
+            onRespondToProposal={(negotiationId, messageId, action) => void respondToProposal(negotiationId, messageId, action)}
+            onComplete={(negotiationId) => void completeNegotiation(negotiationId)}
+          />
+        } />
+        <Route path="/painel" element={renderDashboard()} />
+        <Route path="/lojas" element={<StoresDirectoryPage stores={catalog.stores} />} />
+        <Route path="/lojas/:slug" element={
+          <StoreDetailPage
+            session={session}
+            profile={profile}
+            busy={busy}
+            onReview={createReview}
+            onStartStoreConversation={startStoreConversation}
+          />
+        } />
+        <Route path="/produtos/:productId" element={
+          <ProductDetailPage
+            session={session}
+            profile={profile}
+            busy={busy}
+            onStartStoreConversation={startStoreConversation}
+          />
+        } />
+        <Route path="/servicos" element={<ServicesDirectoryPage providers={catalog.providers} services={catalog.services} />} />
+        <Route path="/prestadores/:providerId" element={
+          <ProviderDetailPage
+            session={session}
+            profile={profile}
+            busy={busy}
+            onReview={createReview}
+            onStartNegotiation={(serviceId) => void startServiceNegotiation(serviceId)}
+          />
+        } />
+        <Route path="/conversas" element={
+          <StoreConversationPage
+            session={session}
+            profile={profile}
+            conversations={storeConversationState.conversations}
+            messages={storeConversationState.messages}
+            message={storeConversationState.message}
+            busy={busy}
+            onMessageChange={storeConversationState.setMessage}
+            onOpen={openStoreConversation}
+            onSend={sendStoreConversationMessage}
+          />
+        } />
+        <Route path="/conversas/:conversationId" element={
+          <StoreConversationPage
+            session={session}
+            profile={profile}
+            conversations={storeConversationState.conversations}
+            messages={storeConversationState.messages}
+            message={storeConversationState.message}
+            busy={busy}
+            onMessageChange={storeConversationState.setMessage}
+            onOpen={openStoreConversation}
+            onSend={sendStoreConversationMessage}
+          />
+        } />
+        <Route path="/conta" element={
+          session && profile
+            ? <ProfileSettingsForm profile={profile} saving={auth.profileSaving} onSave={updateAccountProfile} />
+            : <Account
+                authMode={auth.authMode}
+                authForm={auth.authForm}
+                busy={busy}
+                setAuthForm={auth.setAuthForm}
+                onSubmit={auth.submitAuth}
+                onToggleMode={() => auth.setAuthMode((current) => current === "login" ? "signup" : "login")}
+              />
+        } />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
       <SiteFooter />
     </main>
   );

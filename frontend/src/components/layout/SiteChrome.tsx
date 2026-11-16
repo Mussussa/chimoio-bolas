@@ -1,19 +1,48 @@
 import { useEffect } from "react";
+import { Link } from "react-router-dom";
 import type { Notice, Profile } from "../../lib/types";
 
-type HeaderProps = { profile: Profile | null; onSignOut: () => void };
+type HeaderProps = Readonly<{
+  profile: Profile | null;
+  apiHealth: "checking" | "online" | "offline";
+  pendingNegotiations: number;
+  showStoreConversations: boolean;
+  onSignOut: () => void;
+}>;
 
-export function SiteHeader({ profile, onSignOut }: HeaderProps) {
+export function SiteHeader({ profile, apiHealth, pendingNegotiations, showStoreConversations, onSignOut }: HeaderProps) {
+  const dashboardLabels: Record<Profile["role"], string> = {
+    client: "Abrir negócio",
+    lojista: "Minha Loja",
+    prestador: "Painel do Prestador",
+    admin: "Administração"
+  };
+  const healthLabels = {
+    checking: "a verificar",
+    online: "online",
+    offline: "indisponível"
+  };
+
   return (
     <header className="topbar">
-      <a className="brand" href="#inicio"><span className="brand-icon">CB</span><span>Chimoio <b>Boladas</b><small>NEGÓCIOS LOCAIS</small></span></a>
-      <nav><a href="#mercado">Explorar</a><a href="#servicos">Serviços</a><a href="#negociacoes">Negociações</a></nav>
-      <div className="account">{profile ? <><span>{profile.name} · {profile.role}</span><button className="button button-outline" onClick={onSignOut}>Sair</button></> : <a className="button button-dark" href="#conta">Entrar</a>}</div>
+      <Link className="brand" to="/"><span className="brand-icon">CB</span><span>Chimoio <b>Boladas</b><small>NEGÓCIOS LOCAIS</small></span></Link>
+      <nav aria-label="Navegação principal">
+        <Link to="/">Explorar</Link>
+        <Link to="/negociacoes">Negociações{pendingNegotiations > 0 && <span className="nav-badge" aria-label={`${pendingNegotiations} pendentes`}>{pendingNegotiations}</span>}</Link>
+        {showStoreConversations && <Link to="/conversas">Conversas</Link>}
+        {profile && <Link to="/painel">{dashboardLabels[profile.role]}</Link>}
+      </nav>
+      <div className="account">
+        <span className={`api-health is-${apiHealth}`} aria-label={`Estado da API: ${apiHealth}`}>
+          <span aria-hidden="true" /> API {healthLabels[apiHealth]}
+        </span>
+        {profile ? <><Link to="/conta">{profile.name}</Link><button className="button button-outline" onClick={onSignOut}>Sair</button></> : <Link className="button button-dark" to="/conta">Entrar</Link>}
+      </div>
     </header>
   );
 }
 
-export function NoticeBanner({ notice, onDismiss }: { notice: Notice; onDismiss: () => void }) {
+export function NoticeBanner({ notice, onDismiss }: Readonly<{ notice: Notice; onDismiss: () => void }>) {
   // Temporizador para fechar a notificação automaticamente após 4 segundos
   useEffect(() => {
     if (!notice) return;
@@ -26,7 +55,7 @@ export function NoticeBanner({ notice, onDismiss }: { notice: Notice; onDismiss:
   if (!notice) return null;
 
   return (
-    <div className={`notice ${notice.error ? "notice-error" : ""}`} role="status">
+    <div className={`notice ${notice.error ? "notice-error" : ""}`} role={notice.error ? "alert" : "status"}>
       <span>{notice.text}</span>
       <button onClick={onDismiss} aria-label="Fechar aviso">×</button>
     </div>

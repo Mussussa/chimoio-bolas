@@ -7,6 +7,8 @@ import { initializeReviewModel } from "./Review.js";
 import { initializeServiceModel } from "./Service.js";
 import { initializeServiceProviderModel } from "./ServiceProvider.js";
 import { initializeStoreModel } from "./Store.js";
+import { initializeStoreConversationModel } from "./StoreConversation.js";
+import { initializeStoreMessageModel } from "./StoreMessage.js";
 import { initializeUserModel } from "./User.js";
 
 export { Message } from "./Message.js";
@@ -16,6 +18,8 @@ export { Review } from "./Review.js";
 export { Service } from "./Service.js";
 export { ServiceProvider } from "./ServiceProvider.js";
 export { Store } from "./Store.js";
+export { StoreConversation } from "./StoreConversation.js";
+export { StoreMessage } from "./StoreMessage.js";
 export { User } from "./User.js";
 export { decryptModelField, initializeEncryptedField } from "./encryptedFields.js";
 export type { EncryptedModelField } from "./encryptedFields.js";
@@ -30,5 +34,7 @@ export function initializeModels(sequelize: Sequelize): void {
   initializeNegotiationModel(sequelize);
   initializeMessageModel(sequelize);
   initializeReviewModel(sequelize);
+  initializeStoreConversationModel(sequelize);
+  initializeStoreMessageModel(sequelize);
   initializeAssociations();
 }

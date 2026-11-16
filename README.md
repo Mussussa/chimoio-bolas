@@ -5,6 +5,8 @@ Marketplace local, gratuito e aberto de produtos e serviços em Chimoio. O códi
 ## Arquitectura
 
 - **Leituras públicas:** o navegador usa `@supabase/supabase-js` para consultar lojas verificadas, produtos, prestadores e serviços directamente. O mapa usa a view `map_stores`, que expõe apenas nome, categorias, endereço, coordenadas e estado de verificação de todas as lojas, incluindo pendentes, para que cada loja com coordenadas tenha um pino. A migration também disponibiliza a view segura `public_reviews`. O frontend nunca recebe a chave `service_role`.
+- **Navegação do frontend:** React Router separa Explorar (`/`), Negociações (`/negociacoes`), Gestão (`/painel`) e Conta (`/conta`); `frontend/vercel.json` encaminha as rotas da aplicação para o ponto de entrada ao abrir links directamente.
+- **Imagens públicas:** fotografias de produtos, logótipos de lojas e imagens de prestadores usam buckets separados no Supabase Storage. As políticas permitem leitura pública e restringem os uploads autenticados à pasta do próprio utilizador.
 - **Escritas críticas:** Express autentica o JWT Supabase e obtém a função do utilizador na tabela `users`. Criação/publicação de serviços, mensagens, propostas e conclusão de negociação são executados exclusivamente no backend.
 - **Persistência:** Sequelize liga-se directamente ao PostgreSQL do mesmo projecto Supabase usado pelo frontend. No arranque, `sequelize.sync()` cria as tabelas em falta e o backend configura RLS, políticas de leitura pública e a view segura `public_reviews`. O sync não altera tabelas existentes; para evoluir um esquema já criado, actualiza os modelos e aplica a alteração apropriada sem usar `force` ou `alter` em produção.
 - **Campos sensíveis:** `users.phone`, `negotiations.client_proof_file` e `negotiations.provider_proof_file` são cifrados com AES-256-GCM no hook `beforeValidate` e decifrados no backend após leitura. A chave de 32 bytes é configurada fora do repositório.
@@ -51,15 +53,25 @@ supabase/
 
 | Método e rota | Regra |
 | --- | --- |
+| `GET /api/profile/me`, `PATCH /api/profile/me` | Consulta e actualiza os dados da conta autenticada. |
 | `POST /api/stores/register` | Cria a loja do utilizador autenticado; começa não verificada. |
 | `POST /api/products` | Cria produto na loja própria. |
 | `PATCH /api/products/:id/price` | Altera preço apenas para o proprietário, com validação monetária. |
+| `GET/PUT /api/merchant/store/me`, `GET /api/merchant/products/me` | Consulta e actualiza os dados da loja e lista os produtos do lojista. |
+| `PUT/DELETE /api/merchant/products/:id` | Actualiza ou remove produto apenas da loja do lojista autenticado. |
 | `POST /api/providers/register` | Cria gratuitamente o perfil de prestador sem subscrição ou quota. |
-| `POST /api/services` | Publica serviço do próprio prestador com `internal_platform_service=true`. |
+| `GET/PUT /api/providers/me`, `POST/PUT/DELETE /api/providers/me/services` | Consulta e gere o perfil e os serviços do prestador autenticado. |
+| `POST /api/services` | Alias de compatibilidade para clientes antigos; a interface actual publica em `/api/providers/me/services`. |
 | `POST /api/negotiations`, `POST /api/negotiations/:id/messages` | Cria negociação e mensagens/propostas apenas para participantes. |
 | `POST /api/negotiations/:id/proposals/:messageId/respond` | Apenas a contraparte pode aceitar/rejeitar a proposta mais recente. |
 | `POST /api/negotiations/:id/complete` | O cliente confirma a conclusão de uma negociação aceite, sem pagamento ou escrow. |
+| `POST /api/reviews` | Regista uma avaliação de cliente, de 1 a 5, para uma loja ou prestador. |
+| `GET /api/public/stores/:slug`, `GET /api/public/products/:id`, `GET /api/public/providers/:id` | Consulta páginas públicas de lojas e produtos (incluindo os que aguardam verificação) e perfis públicos de prestadores. |
+| `GET /api/public/reviews/:targetType/:targetId` | Lista as avaliações públicas de uma loja ou prestador. |
+| `GET/POST /api/store-conversations`, `GET/POST /api/store-conversations/:id/messages` | Caixa de entrada e mensagens entre clientes e lojistas, separadas das negociações de serviços e limitadas aos participantes. |
 | `POST /api/admin/stores/:id/verify` | Verificação administrativa de lojas. |
+
+O chat de lojas requer a migration `supabase/migrations/20261116120000_store_conversations.sql` no projecto Supabase. A migration `supabase/migrations/20261116130000_public_pending_store_listings.sql` permite a leitura pública de lojas e produtos pendentes, sem permitir alterações públicas. O arranque local também regista os modelos e configura as políticas RLS.
 
 Para criar o primeiro administrador, cria uma conta pela interface, inicia sessão uma vez e actualiza manualmente a role dessa conta no SQL Editor do projecto Supabase:
 
@@ -80,7 +92,7 @@ O frontend e o backend têm de apontar para o mesmo projecto Supabase. O fronten
    npx supabase db push
    ```
 
-   As migrations criam as tabelas e RLS. A segunda migration remove tabelas/campos comerciais antigos; faz backup antes de aplicá-la se o projecto remoto já tiver dados que precises. `sequelize.sync()` continua seguro após as migrations: cria apenas tabelas em falta, sem `force` nem `alter`, e o backend actualiza as políticas RLS no arranque.
+   As migrations criam as tabelas, RLS e buckets de imagens (`store-logos`, `provider-media` e `products`). A segunda migration remove tabelas/campos comerciais antigos; faz backup antes de aplicá-la se o projecto remoto já tiver dados que precises. `sequelize.sync()` continua seguro após as migrations: cria apenas tabelas em falta, sem `force` nem `alter`, e o backend actualiza as políticas RLS no arranque.
 3. Em **Supabase > Project Settings > Database**, copia a connection string PostgreSQL do projecto. Usa a string do Session Pooler se a ligação directa não estiver disponível e preenche `DATABASE_URL` no `backend/.env`. Define também `DATABASE_SSL=true`; essa ligação é usada apenas pelo servidor e nunca deve ser exposta ao frontend.
 4. Preenche as variáveis nos ficheiros `backend/.env` e `frontend/.env`. Se algum não existir, cria-o com os nomes de variáveis necessários; deixa vazias as variáveis para as quais ainda não tens valor. A `DATABASE_URL` tem de ser a connection string real do PostgreSQL Supabase; gera também a chave de cifragem:
 

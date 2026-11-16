@@ -39,6 +39,9 @@ export const auditLogger = {
       to?: string;
       serviceId?: string;
       messageType?: string;
+      conversationId?: string;
+      storeId?: string;
+      productId?: string | null;
     };
   }): void {
     logger.info("Business audit", {

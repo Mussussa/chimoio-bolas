@@ -19,6 +19,7 @@ export type Store = {
   latitude: number | null;
   longitude: number | null;
   verified: boolean;
+  logo_url?: string | null;
 };
 
 export type MapStore = Pick<Store, "id" | "name" | "category" | "address" | "verified"> & {

@@ -28,7 +28,8 @@ describe("validação Joi", () => {
       name: "Arroz",
       description: "Arroz local",
       price: "250.50",
-      category: "Alimentação"
+      category: "Alimentação & Bebidas",
+      images: []
     });
 
     expect(response.status).toBe(200);
