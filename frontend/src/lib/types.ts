@@ -3,6 +3,7 @@ export type Profile = {
   name: string;
   email: string;
   phone: string | null;
+  avatarUrl?: string | null;
   role: "client" | "lojista" | "prestador" | "admin";
   store?: { category: string[] } | null;
 };
@@ -50,8 +51,10 @@ export type Service = {
   provider_id: string;
   title: string;
   description: string;
+  category: string;
   price: string;
   delivery_time: string;
+  images: string[];
   published: boolean;
   internal_platform_service: boolean;
 };
@@ -91,6 +94,14 @@ export type ServiceForm = {
   description: string; 
   price: string; 
   deliveryTime: string; 
+};
+
+export type ProviderServiceForm = {
+  title: string;
+  description: string;
+  category: string;
+  price: string;
+  deliveryTime: string;
 };
 
 export type StoreForm = {

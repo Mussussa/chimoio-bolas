@@ -19,6 +19,8 @@ app.patch(
   validateRequest(requestSchemas.updateProductPrice),
   (_req, res) => sendSuccess(res, { ok: true })
 );
+app.post("/services", validateRequest(requestSchemas.publishService), (req, res) => res.json(req.body));
+app.patch("/profile", validateRequest(requestSchemas.updateProfile), (req, res) => res.json(req.body));
 
 describe("validação Joi", () => {
   it("converte números recebidos como texto e aplica valores padrão", async () => {
@@ -85,5 +87,33 @@ describe("validação Joi", () => {
 
     expect(response.status).toBe(400);
     expect(response.body.message).toContain('"O preço" deve ser um valor monetário válido em MT.');
+  });
+
+  it("valida categoria e fotografias ao publicar um serviço", async () => {
+    const response = await request(app).post("/services").send({
+      title: "Instalação elétrica",
+      description: "Instalação e revisão residencial",
+      category: "Eletricidade",
+      price: "1250",
+      deliveryTime: "2 horas",
+      images: ["https://storage.example/servico.jpg"]
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      category: "Eletricidade",
+      price: 1250,
+      images: ["https://storage.example/servico.jpg"]
+    });
+  });
+
+  it("aceita o URL da fotografia de perfil no contrato de perfil", async () => {
+    const response = await request(app).patch("/profile").send({
+      name: "Ana Prestadora",
+      avatarUrl: "https://storage.example/perfil.jpg"
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.avatarUrl).toBe("https://storage.example/perfil.jpg");
   });
 });

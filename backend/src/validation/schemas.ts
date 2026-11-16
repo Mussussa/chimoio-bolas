@@ -1,5 +1,6 @@
 import Joi from "joi";
 import { isValidPrice } from "../domain/rules.js";
+import { SERVICE_CATEGORIES } from "../models/ServiceProvider.js";
 
 const requiredText = (label: string, max: number) =>
   Joi.string().trim().min(1).max(max).required().label(label);
@@ -46,12 +47,6 @@ const STORE_CATEGORIES_LIST = [
   "Saúde & Beleza", "Casa & Decoração", "Diversos"
 ];
 
-const SERVICE_CATEGORIES_LIST = [
-  "Construção", "Eletricidade", "Hidráulica", "Carpintaria & Serralharia",
-  "Transporte & Logística", "Hotelaria & Restauração", "Tecnologia & Informática",
-  "Beleza & Estética", "Limpeza & Jardinagem", "Diversos"
-];
-
 export const requestSchemas = {
   registerStore: Joi.object({
     name: requiredText("O nome da loja", 160),
@@ -91,7 +86,7 @@ createProduct: Joi.object({
   }),
   registerProvider: Joi.object({
     category: Joi.array()
-      .items(Joi.string().valid(...SERVICE_CATEGORIES_LIST))
+      .items(Joi.string().valid(...SERVICE_CATEGORIES))
       .min(1)
       .required()
       .label("As áreas de atuação"),
@@ -101,12 +96,30 @@ createProduct: Joi.object({
   publishService: Joi.object({
     title: requiredText("O título", 180),
     description: requiredText("A descrição", 5000),
+    category: Joi.string().valid(...SERVICE_CATEGORIES).required().label("A categoria do serviço"),
     price: price("O preço"),
-    deliveryTime: requiredText("O prazo de entrega", 100)
+    deliveryTime: requiredText("O prazo de entrega", 100),
+    images: Joi.array().items(Joi.string().uri().max(2000)).max(8).default([]).label("As fotografias do serviço")
+  }),
+  updateProvider: Joi.object({
+    name: requiredText("O nome", 120),
+    category: Joi.array().items(Joi.string().trim().min(1).max(100)).min(1).required().label("As áreas de atuação"),
+    bio: requiredText("A biografia", 2000),
+    basePrice: price("O preço base"),
+    avatarUrl: Joi.string().uri().max(2000).allow(null, "").optional().label("A fotografia de perfil")
+  }),
+  updateService: Joi.object({
+    title: requiredText("O título", 180),
+    description: requiredText("A descrição", 5000),
+    category: Joi.string().valid(...SERVICE_CATEGORIES).required().label("A categoria do serviço"),
+    price: price("O preço"),
+    deliveryTime: requiredText("O prazo de entrega", 100),
+    images: Joi.array().items(Joi.string().uri().max(2000)).max(8).default([]).label("As fotografias do serviço")
   }),
   updateProfile: Joi.object({
     name: requiredText("O nome", 120),
-    phone: Joi.string().max(40).allow(null, "").optional().label("O telefone")
+    phone: Joi.string().max(40).allow(null, "").optional().label("O telefone"),
+    avatarUrl: Joi.string().uri().max(2000).allow(null, "").optional().label("A fotografia de perfil")
   }),
   createReview: Joi.object({
     targetType: Joi.string().valid("store", "service_provider").required().label("O tipo de destino"),
@@ -138,6 +151,9 @@ createProduct: Joi.object({
   }),
   productIdParams: Joi.object({
     id: uuid("O identificador do produto")
+  }),
+  serviceIdParams: Joi.object({
+    id: uuid("O identificador do serviço")
   }),
   negotiationIdParams: Joi.object({
     id: uuid("O identificador da negociação")

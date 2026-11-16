@@ -13,8 +13,10 @@ export class Service extends Model<InferAttributes<Service>, InferCreationAttrib
   declare providerId: string;
   declare title: string;
   declare description: string;
+  declare category: string;
   declare price: string;
   declare deliveryTime: string;
+  declare images: CreationOptional<string[]>;
   declare published: CreationOptional<boolean>;
   declare internalPlatformService: CreationOptional<boolean>;
   declare createdAt: CreationOptional<Date>;
@@ -26,8 +28,10 @@ export function initializeServiceModel(sequelize: Sequelize): void {
     providerId: { type: DataTypes.UUID, allowNull: false, field: "provider_id" },
     title: { type: DataTypes.STRING(180), allowNull: false },
     description: { type: DataTypes.TEXT, allowNull: false },
+    category: { type: DataTypes.STRING(100), allowNull: false, defaultValue: "Diversos" },
     price: { type: DataTypes.DECIMAL(12, 2), allowNull: false },
     deliveryTime: { type: DataTypes.STRING(100), allowNull: false, field: "delivery_time" },
+    images: { type: DataTypes.JSONB, allowNull: false, defaultValue: [] },
     published: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
     internalPlatformService: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true, field: "internal_platform_service" },
     createdAt: { type: DataTypes.DATE, field: "created_at" }

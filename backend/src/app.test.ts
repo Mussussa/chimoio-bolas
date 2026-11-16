@@ -42,6 +42,17 @@ describe("API Express", () => {
     expect(response.body).toMatchObject({ success: false, error_code: "UNAUTHORIZED" });
   });
 
+  it("protege o painel e a gestão de serviços do prestador", async () => {
+    const responses = await Promise.all([
+      request(app).get("/api/providers/me"),
+      request(app).put("/api/providers/me").send({}),
+      request(app).post("/api/providers/me/services").send({}),
+      request(app).delete("/api/providers/me/services/11111111-1111-4111-8111-111111111111")
+    ]);
+
+    expect(responses.map((response) => response.status)).toEqual([401, 401, 401, 401]);
+  });
+
   it("recusa alteração de preço sem sessão autenticada", async () => {
     const response = await request(app).patch("/api/products/11111111-1111-4111-8111-111111111111/price").send({ price: 1 });
     expect(response.status).toBe(401);

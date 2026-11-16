@@ -1,5 +1,5 @@
 import type { FormEvent } from "react";
-import type { MessageForm, Negotiation, Profile } from "../lib/types";
+import type { MessageForm, Negotiation, Profile } from "../../lib/types";
 
 type NegotiationsProps = {
   negotiations: Negotiation[];

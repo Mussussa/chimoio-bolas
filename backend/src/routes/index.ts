@@ -3,6 +3,7 @@ import { adminRouter } from "./admin.js";
 import { merchantRouter } from "./merchant.js";
 import { negotiationsRouter } from "./negotiations.js";
 import { profileRouter } from "./profile.js";
+import { providerRouter } from "./provider.js";
 import { reviewsRouter } from "./reviews.js";
 import { servicesRouter } from "./services.js";
 import { storesRouter } from "./stores.js";
@@ -11,7 +12,9 @@ export const apiRouter = Router();
 
 // Agrupa os endpoints de perfil do utilizador.
 apiRouter.use("/profile", profileRouter);
-// Agrupa o registo de prestadores e a publicação de serviços.
+// Agrupa o perfil e o painel de gestão dos prestadores.
+apiRouter.use("/providers", providerRouter);
+// Mantém a rota antiga de publicação durante a compatibilidade.
 apiRouter.use(servicesRouter);
 // Agrupa o registo de lojas e a gestão de produtos.
 apiRouter.use(storesRouter);

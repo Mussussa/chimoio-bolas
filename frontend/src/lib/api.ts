@@ -84,6 +84,54 @@ export type MerchantProduct = {
   minOrderQty: number;
 };
 
+export type ProviderService = {
+  id: string;
+  providerId: string;
+  title: string;
+  description: string;
+  category: string;
+  price: string;
+  deliveryTime: string;
+  images: string[];
+  published: boolean;
+  internalPlatformService: boolean;
+  createdAt: string;
+};
+
+export type ProviderAccount = {
+  id: string;
+  userId: string;
+  category: string[];
+  bio: string;
+  basePrice: string;
+  verified: boolean;
+  platformMember: boolean;
+  createdAt: string;
+};
+
+export type ProviderDashboardData = {
+  provider: ProviderAccount;
+  services: ProviderService[];
+  profile: { id: string; name: string; avatarUrl: string | null };
+};
+
+export type ProviderProfileUpdate = {
+  name: string;
+  category: string[];
+  bio: string;
+  basePrice: number;
+  avatarUrl: string | null;
+};
+
+export type ProviderServicePayload = {
+  title: string;
+  description: string;
+  category: string;
+  price: number;
+  deliveryTime: string;
+  images: string[];
+};
+
 export async function loadMerchantStore(session: Session): Promise<MerchantStore> {
   const result = await api<{ store: Omit<MerchantStore, "category"> & { category: unknown } }>("/merchant/store/me", session);
   return { ...result.store, category: normalizeStoreCategories(result.store.category) };
@@ -119,31 +167,79 @@ export function deleteMerchantProduct(session: Session, productId: string) {
   return api<null>(`/merchant/products/${encodeURIComponent(productId)}`, session, { method: "DELETE" });
 }
 
+export async function loadProviderDashboard(session: Session): Promise<ProviderDashboardData> {
+  const result = await api<ProviderDashboardData>("/providers/me", session);
+  return {
+    ...result,
+    provider: { ...result.provider, category: normalizeStoreCategories(result.provider.category) }
+  };
+}
+
+export function updateProviderProfile(session: Session, body: ProviderProfileUpdate) {
+  return api<Pick<ProviderDashboardData, "provider" | "profile">>("/providers/me", session, { method: "PUT", body });
+}
+
+export function publishProviderService(session: Session, body: ProviderServicePayload) {
+  return api<{ service: ProviderService }>("/providers/me/services", session, { method: "POST", body });
+}
+
+export function updateProviderService(session: Session, serviceId: string, body: ProviderServicePayload) {
+  return api<{ service: ProviderService }>(`/providers/me/services/${encodeURIComponent(serviceId)}`, session, { method: "PUT", body });
+}
+
+export function deleteProviderService(session: Session, serviceId: string) {
+  return api<null>(`/providers/me/services/${encodeURIComponent(serviceId)}`, session, { method: "DELETE" });
+}
+
 function normalizeStoreCategories(category: unknown): string[] {
   if (Array.isArray(category)) {
     return category.filter((item): item is string => typeof item === "string");
   }
   if (typeof category !== "string" || !category.trim()) return [];
 
-  let value = category.trim();
-  if (value.startsWith("[") && value.endsWith("]")) {
-    try {
-      const parsed: unknown = JSON.parse(value);
-      if (Array.isArray(parsed)) {
-        return parsed.filter((item): item is string => typeof item === "string");
-      }
-    } catch {
-      // Continue parsing the PostgreSQL array format.
+  const value = category.trim();
+  const jsonCategories = parseJsonCategories(value);
+  return jsonCategories ?? parsePostgresCategories(value);
+}
+
+function parseJsonCategories(value: string): string[] | null {
+  if (!value.startsWith("[") || !value.endsWith("]")) return null;
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is string => typeof item === "string")
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function parsePostgresCategories(value: string): string[] {
+  const contents = value.startsWith("{") && value.endsWith("}")
+    ? value.slice(1, -1)
+    : value;
+  const categories: string[] = [];
+  let current = "";
+  let quoted = false;
+  let escaped = false;
+  for (const character of contents) {
+    if (escaped) {
+      current += character;
+      escaped = false;
+    } else if (character === "\\") {
+      escaped = true;
+    } else if (character === '"') {
+      quoted = !quoted;
+    } else if (character === "," && !quoted) {
+      if (current.trim()) categories.push(current.trim());
+      current = "";
+    } else {
+      current += character;
     }
   }
-
-  if (value.startsWith("{") && value.endsWith("}")) {
-    value = value.slice(1, -1);
-  }
-  return value
-    .split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/)
-    .map((item) => item.trim().replace(/^"(.*)"$/, "$1").replace(/\\"/g, '"').replace(/\\\\/g, "\\"))
-    .filter(Boolean);
+  if (escaped) current += "\\";
+  if (current.trim()) categories.push(current.trim());
+  return categories;
 }
 
 export async function loadNegotiations(session: Session): Promise<Negotiation[]> {
@@ -152,7 +248,7 @@ export async function loadNegotiations(session: Session): Promise<Negotiation[]>
 }
 
 export function registerProvider(session: Session, body: ProviderForm) {
-  return api<{ provider: ServiceProvider }>("/providers/register", session, { method: "POST", body });
+  return api<{ provider: ProviderAccount }>("/providers/register", session, { method: "POST", body });
 }
 
 export function publishService(session: Session, body: ServiceForm) {

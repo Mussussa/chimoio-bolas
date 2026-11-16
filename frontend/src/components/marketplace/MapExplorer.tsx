@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from "react-leaflet";
-import type { MapStore } from "../lib/types";
-import { getStoreLocations, type StoreLocation } from "../lib/mapStores";
+import type { MapStore } from "../../lib/types";
+import { getStoreLocations, type StoreLocation } from "../../lib/mapStores";
 
 type Props = {
   stores: MapStore[];

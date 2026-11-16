@@ -15,6 +15,7 @@ export const getProfile: RequestHandler = async (req, res, next) => {
       name: user.name,
       email: user.email,
       phone: user.phone,
+      avatarUrl: user.avatarUrl,
       role: user.role,
       store: store ? {
         id: store.id,
@@ -38,8 +39,9 @@ export const updateProfile: RequestHandler = async (req, res, next) => {
     const user = req.appUser as User;
     user.name = req.body.name.trim();
     if (req.body.phone !== undefined) user.phone = req.body.phone?.trim() || null;
+    if (req.body.avatarUrl !== undefined) user.avatarUrl = req.body.avatarUrl?.trim() || null;
     await user.save();
-    return sendSuccess(res, { id: user.id, name: user.name, email: user.email, phone: user.phone, role: user.role }, 200, "Perfil actualizado.");
+    return sendSuccess(res, { id: user.id, name: user.name, email: user.email, phone: user.phone, avatarUrl: user.avatarUrl, role: user.role }, 200, "Perfil actualizado.");
   } catch (error) {
     next(error);
   }

@@ -1,4 +1,4 @@
-import type { MapStore, Product, Profile, Service, ServiceProvider, Store } from "../lib/types";
+import type { MapStore, Product, Profile, Service, ServiceProvider, Store } from "../../lib/types";
 import MapExplorer from "./MapExplorer";
 
 type MarketplaceProps = {
@@ -116,11 +116,12 @@ export default function Marketplace({
           return (
             <article className="listing-card service-card" key={service.id}>
               <span className="tag tag-green">SERVIÇO · NA PLATAFORMA</span>
+              {service.images?.[0] && <img className="service-listing-image" src={service.images[0]} alt={service.title} />}
               <h3>{service.title}</h3>
               <p>{service.description}</p>
               <div className="listing-foot">
                 <b>{Number(service.price).toLocaleString("pt-MZ")} MT</b>
-                <span>{provider?.category} · {service.delivery_time}</span>
+                <span>{service.category || provider?.category} · {service.delivery_time}</span>
               </div>
               {profile?.role === "client" && (
                 <button className="button button-dark full-button" disabled={busy} onClick={() => onStartNegotiation(service.id)}>

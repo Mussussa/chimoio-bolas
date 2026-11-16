@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import type { Notice, Profile } from "../lib/types";
+import type { Notice, Profile } from "../../lib/types";
 
 type HeaderProps = { profile: Profile | null; onSignOut: () => void };
 

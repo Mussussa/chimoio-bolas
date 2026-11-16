@@ -1,24 +1,20 @@
 import { useState, type Dispatch, type FormEvent, type SetStateAction } from "react";
-import type { ProductForm, Profile, ProviderForm, ServiceForm, StoreForm } from "../lib/types";
-import { CHIMOIO_NEIGHBORHOODS } from "../lib/chimoioNeighborhoods";
-import { supabase } from "../lib/supabase";
+import type { ProductForm, Profile, ProviderForm, StoreForm } from "../../lib/types";
+import { CHIMOIO_NEIGHBORHOODS } from "../../lib/chimoioNeighborhoods";
+import { supabase } from "../../lib/supabase";
 
 type WorkspaceProps = Readonly<{
   profile: Profile;
-  ownProvider: boolean;
   busy: boolean;
   providerForm: ProviderForm & { category: string[] };
-  serviceForm: ServiceForm;
   storeForm: StoreForm & { neighborhood?: string; category: string[] };
   productForm: ProductForm;
   setProviderForm: Dispatch<SetStateAction<any>>;
-  setServiceForm: Dispatch<SetStateAction<ServiceForm>>;
   setStoreForm: Dispatch<SetStateAction<any>>;
   setProductForm: Dispatch<SetStateAction<ProductForm>>;
   registerStore: (event: FormEvent<HTMLFormElement>) => void;
   createProduct: (event: FormEvent<HTMLFormElement>, product?: ProductForm & { images?: string[] }) => void;
   registerProvider: (event: FormEvent<HTMLFormElement>) => void;
-  publishService: (event: FormEvent<HTMLFormElement>) => void;
 }>;
 
 // Listas oficiais de categorias para os formulários de lojas e serviços
@@ -46,20 +42,16 @@ function generateSlug(text: string) {
 
 export default function Workspace({
   profile,
-  ownProvider,
   busy,
   providerForm,
-  serviceForm,
   storeForm,
   productForm,
   setProviderForm,
-  setServiceForm,
   setStoreForm,
   setProductForm,
   registerStore,
   createProduct,
-  registerProvider,
-  publishService
+  registerProvider
 }: WorkspaceProps) {
   const [gpsEnabled, setGpsEnabled] = useState(false);
   
@@ -407,66 +399,6 @@ export default function Workspace({
         </div>
       )}
 
-      {ownProvider && (
-        <div className="panel">
-          <div className="section-head">
-            <div>
-              <p className="eyebrow">PAINEL DO PRESTADOR</p>
-              <h2>Publicar novo serviço</h2>
-              <p>O seu serviço ficará visível para os clientes de Chimoio assim que for publicado.</p>
-            </div>
-          </div>
-          <form className="form-grid" onSubmit={publishService}>
-            <label>
-              Título do serviço
-              <input 
-                required 
-                maxLength={180} 
-                placeholder="Ex.: Instalação elétrica residencial completa"
-                value={serviceForm.title} 
-                onChange={(event) => setServiceForm((current) => ({ ...current, title: event.target.value }))} 
-              />
-            </label>
-
-            <label>
-              Valor cobrado (MT)
-              <input 
-                required 
-                type="number" 
-                min="0" 
-                step="0.01" 
-                placeholder="Ex.: 2500.00"
-                value={serviceForm.price} 
-                onChange={(event) => setServiceForm((current) => ({ ...current, price: event.target.value }))} 
-              />
-            </label>
-
-            <label>
-              Tempo médio de execução
-              <input 
-                required 
-                maxLength={100} 
-                value={serviceForm.deliveryTime} 
-                onChange={(event) => setServiceForm((current) => ({ ...current, deliveryTime: event.target.value }))} 
-                placeholder="Ex.: 1 dia, 3 horas, No mesmo dia" 
-              />
-            </label>
-
-            <label className="wide">
-              Descrição detalhada do serviço
-              <textarea 
-                required 
-                maxLength={5000} 
-                placeholder="Explique exatamente o que está incluído no valor, materiais necessários..."
-                value={serviceForm.description} 
-                onChange={(event) => setServiceForm((current) => ({ ...current, description: event.target.value }))} 
-              />
-            </label>
-
-            <button className="button button-dark" type="submit" disabled={busy}>Publicar serviço no mercado</button>
-          </form>
-        </div>
-      )}
     </section>
   );
 }
