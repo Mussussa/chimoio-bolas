@@ -1,9 +1,9 @@
 {
-  "name": "Chimoio Boladas",
-  "short_name": "Boladas",
+  "name": "YELLOW",
+  "short_name": "YELLOW",
   "description": "Marketplace local de produtos e serviços em Chimoio.",
-  "theme_color": "#155b93",
-  "background_color": "#f4f8fc",
+  "theme_color": "#ffd21a",
+  "background_color": "#fbfaf6",
   "display": "standalone",
   "orientation": "portrait-primary",
   "scope": "/",

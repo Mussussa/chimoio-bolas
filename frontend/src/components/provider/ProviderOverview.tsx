@@ -14,7 +14,7 @@ export default function ProviderOverview({ dashboard, onEditProfile, onManageSer
       <div className="provider-stats">
         <article><span>Serviços publicados</span><strong>{services.length}</strong></article>
         <article><span>Áreas de atuação</span><strong>{provider.category.length}</strong></article>
-        <article><span>Estado do perfil</span><strong>{provider.verified ? "Verificado" : "Em análise"}</strong></article>
+        <article><span>Estado do perfil</span><strong>{provider.verified ? "Verificado" : "Não verificado"}</strong></article>
       </div>
       <div className="provider-overview-grid">
         <section className="provider-panel">

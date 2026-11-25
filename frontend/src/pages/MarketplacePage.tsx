@@ -218,6 +218,7 @@ export default function MarketplacePage() {
               products={visibleProducts}
               services={visibleServices}
               providers={catalog.providers}
+              providerReviews={catalog.providerReviews}
               profile={profile}
               busy={busy}
               search={search}
@@ -229,7 +230,6 @@ export default function MarketplacePage() {
               onSearchChange={setSearch}
               onLocate={locate}
               onClearLocation={() => { setNearby(false); setCoordinates(null); }}
-              onClearFilters={() => setSearch("")}
               onPriceChange={(productId, value) => setPriceDrafts((current) => ({ ...current, [productId]: value }))}
               onUpdatePrice={(productId) => void updateProductPrice(productId)}
               onStartStoreConversation={startStoreConversation}

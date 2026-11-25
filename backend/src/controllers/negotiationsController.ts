@@ -6,6 +6,7 @@ import { auditLogger } from "../config/logger.js";
 import { sendError, sendSuccess } from "../http/responses.js";
 import { Message, Negotiation, Service, ServiceProvider, User } from "../models/index.js";
 
+// Confirma que o utilizador participa na negociação; as rotas usam este filtro antes de devolver ou alterar dados.
 async function findParticipantNegotiation(id: string, user: User): Promise<Negotiation | null> {
   const negotiation = await Negotiation.findByPk(id);
   if (!negotiation) return null;
@@ -14,6 +15,7 @@ async function findParticipantNegotiation(id: string, user: User): Promise<Negot
   return negotiation;
 }
 
+// Lista negociações e mensagens do cliente ou prestador; o frontend apresenta a caixa de conversas e o respectivo estado.
 export const listNegotiations: RequestHandler = async (req, res, next) => {
   try {
     const user = req.appUser as User;
@@ -48,6 +50,7 @@ export const listNegotiations: RequestHandler = async (req, res, next) => {
   }
 };
 
+// Inicia uma negociação sobre um serviço publicado; o frontend abre a conversa de negociação para o cliente.
 export const createNegotiation: RequestHandler = async (req, res, next) => {
   try {
     const user = req.appUser as User;
@@ -73,6 +76,7 @@ export const createNegotiation: RequestHandler = async (req, res, next) => {
   }
 };
 
+// Envia uma mensagem ou proposta de preço; o frontend actualiza a conversa com a mensagem e o estado da proposta.
 export const createMessage: RequestHandler = async (req, res, next) => {
   try {
     const user = req.appUser as User;
@@ -137,6 +141,7 @@ export const createMessage: RequestHandler = async (req, res, next) => {
   }
 };
 
+// Aceita ou rejeita a proposta mais recente; o frontend actualiza o estado e o preço acordado na negociação.
 export const respondToProposal: RequestHandler = async (req, res, next) => {
   try {
     const user = req.appUser as User;
@@ -178,6 +183,7 @@ export const respondToProposal: RequestHandler = async (req, res, next) => {
   }
 };
 
+// Regista a conclusão confirmada pelo cliente; o frontend passa a apresentar a negociação como concluída.
 export const completeNegotiation: RequestHandler = async (req, res, next) => {
   try {
     const user = req.appUser as User;

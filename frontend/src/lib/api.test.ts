@@ -34,11 +34,14 @@ describe("API response handling", () => {
   });
 
   it("returns data from a valid API success response", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
       success: true,
       data: { id: "store-1" }
-    }))));
+    })));
+    vi.stubGlobal("fetch", fetchMock);
 
     await expect(api<{ id: string }>("/stores/example")).resolves.toEqual({ id: "store-1" });
+    const apiServer = import.meta.env.VITE_API_URL?.replace(/\/+$/, "") ?? "";
+    expect(fetchMock).toHaveBeenCalledWith(`${apiServer}/api/stores/example`, expect.any(Object));
   });
 });

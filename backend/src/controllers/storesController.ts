@@ -2,6 +2,7 @@ import type { RequestHandler } from "express";
 import { sendError, sendSuccess } from "../http/responses.js";
 import { Product, Store, User } from "../models/index.js";
 
+// Regista a loja do utilizador; o frontend usa o resultado para concluir o registo e mostrar a loja pendente de verificação.
 export const registerStore: RequestHandler = async (req, res, next) => {
   try {
     const user = req.appUser as User;
@@ -51,6 +52,7 @@ return Store.create({
   }
 };
 
+// Cria um produto na loja autenticada; o frontend apresenta o produto criado na gestão e no catálogo.
 export const createProduct: RequestHandler = async (req, res, next) => {
   try {
     const user = req.appUser as User;
@@ -94,6 +96,7 @@ export const createProduct: RequestHandler = async (req, res, next) => {
   }
 };
 
+// Actualiza o preço de um produto da loja autenticada; o frontend reflecte o novo preço na gestão e no catálogo.
 export const updateProductPrice: RequestHandler = async (req, res, next) => {
   try {
     const productId = req.params.id as string;

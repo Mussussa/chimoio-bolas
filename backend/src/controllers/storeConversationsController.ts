@@ -3,6 +3,7 @@ import { auditLogger } from "../config/logger.js";
 import { sendError, sendSuccess } from "../http/responses.js";
 import { Product, Store, StoreConversation, StoreMessage, User } from "../models/index.js";
 
+// Localiza a conversa apenas para um dos participantes; é uma verificação interna antes de servir pedidos do chat.
 async function findConversationForUser(id: string, user: User): Promise<StoreConversation | null> {
   const conversation = await StoreConversation.findByPk(id);
   if (!conversation) return null;
@@ -12,6 +13,7 @@ async function findConversationForUser(id: string, user: User): Promise<StoreCon
   return store ? conversation : null;
 }
 
+// Lista conversas do cliente ou da loja do lojista; o frontend mostra a caixa de conversas e a última mensagem.
 export const listStoreConversations: RequestHandler = async (req, res, next) => {
   try {
     const user = req.appUser as User;
@@ -47,13 +49,14 @@ export const listStoreConversations: RequestHandler = async (req, res, next) => 
   }
 };
 
+// Cria uma conversa com a loja e envia a primeira mensagem; o frontend abre o novo chat.
 export const createStoreConversation: RequestHandler = async (req, res, next) => {
   try {
     const user = req.appUser as User;
     const { storeId, productId, content } = req.body as {
       storeId: string; productId?: string; content: string;
     };
-    const store = await Store.findOne({ where: { id: storeId, verified: true } });
+    const store = await Store.findByPk(storeId);
     if (!store) return sendError(res, 404, "Loja não encontrada.");
     if (store.ownerId === user.id) return sendError(res, 409, "Não pode iniciar uma conversa com a sua própria loja.");
     if (productId) {
@@ -86,6 +89,7 @@ export const createStoreConversation: RequestHandler = async (req, res, next) =>
   }
 };
 
+// Carrega as mensagens de uma conversa autorizada; o frontend apresenta o histórico do chat.
 export const listStoreMessages: RequestHandler = async (req, res, next) => {
   try {
     const user = req.appUser as User;
@@ -102,6 +106,7 @@ export const listStoreMessages: RequestHandler = async (req, res, next) => {
   }
 };
 
+// Envia uma mensagem numa conversa autorizada; o frontend actualiza o chat com a nova mensagem.
 export const sendStoreMessage: RequestHandler = async (req, res, next) => {
   try {
     const user = req.appUser as User;

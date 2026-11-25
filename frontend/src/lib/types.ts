@@ -85,6 +85,14 @@ export type Catalog = {
   products: Product[];
   providers: ServiceProvider[];
   services: Service[];
+  providerReviews: ProviderReview[];
+};
+
+export type ProviderReview = {
+  target_id: string;
+  rating: number;
+  comment: string;
+  created_at: string;
 };
 
 export type Notice = { text: string; error?: boolean } | null;

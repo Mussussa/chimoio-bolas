@@ -49,7 +49,7 @@ export default function ProviderDetailPage({
       <header className="public-detail-heading">
         {providerProfile?.avatarUrl && <img className="provider-detail-avatar" src={providerProfile.avatarUrl} alt="" />}
         <div>
-          <span className="tag tag-green">{provider.verified ? "Prestador verificado ✓" : "Prestador na plataforma"}</span>
+          <span className="tag tag-green">{provider.verified ? "Prestador verificado ✓" : "Prestador não verificado"}</span>
           <h1>{providerProfile?.name ?? "Prestador de serviços"}</h1>
           <p>{provider.category.join(" · ")}</p>
         </div>
@@ -68,7 +68,7 @@ export default function ProviderDetailPage({
                 <div className="listing-foot"><b>{Number(service.price).toLocaleString("pt-MZ")} MT</b><span>{service.deliveryTime}</span></div>
                 <SharePageButton
                   title={service.title}
-                  text={`Conhece o serviço ${service.title} em Chimoio Boladas.`}
+                  text={`Conhece o serviço ${service.title} na YELLOW, em Chimoio.`}
                   label="Partilhar serviço"
                   url={`${window.location.origin}${providerServiceHref(provider.id, service.id)}`}
                   imageUrl={service.images?.[0]}

@@ -1,10 +1,10 @@
-# Chimoio Boladas
+# YELLOW
 
-Marketplace local, gratuito e aberto de produtos e serviços em Chimoio. O código da aplicação está em TypeScript: React/Vite/PWA no cliente, Express modular no backend e Sequelize com PostgreSQL. Meticais (MT) são usados apenas nos preços definidos livremente pelos utilizadores para produtos e serviços e nas propostas de negociação. A plataforma não cobra, não simula pagamentos e não implementa escrow.
+YELLOW é um marketplace local, gratuito e aberto de produtos e serviços em Chimoio. O código da aplicação está em TypeScript: React/Vite/PWA no cliente, Express modular no backend e Sequelize com PostgreSQL. Meticais (MT) são usados apenas nos preços definidos livremente pelos utilizadores para produtos e serviços e nas propostas de negociação. A plataforma não cobra, não simula pagamentos e não implementa escrow.
 
 ## Arquitectura
 
-- **Leituras públicas:** o navegador usa `@supabase/supabase-js` para consultar lojas verificadas, produtos, prestadores e serviços directamente. O mapa usa a view `map_stores`, que expõe apenas nome, categorias, endereço, coordenadas e estado de verificação de todas as lojas, incluindo pendentes, para que cada loja com coordenadas tenha um pino. A migration também disponibiliza a view segura `public_reviews`. O frontend nunca recebe a chave `service_role`.
+- **Leituras públicas:** o navegador usa `@supabase/supabase-js` para consultar lojas, produtos, prestadores, serviços e avaliações directamente. Na página inicial, prestadores e avaliações aparecem antes do mapa e das lojas. O mapa usa a view `map_stores`, que expõe apenas nome, categorias, endereço, coordenadas e estado de verificação; permite filtrar por bairro e categoria e, após GPS ou escolha de bairro, mostra a área num raio de 3 km. A migration também disponibiliza a view segura `public_reviews`. O frontend nunca recebe a chave `service_role`.
 - **Navegação do frontend:** React Router separa Explorar (`/`), Negociações (`/negociacoes`), Gestão (`/painel`) e Conta (`/conta`); `frontend/vercel.json` encaminha as rotas da aplicação para o ponto de entrada ao abrir links directamente.
 - **Imagens públicas:** fotografias de produtos, logótipos de lojas e imagens de prestadores usam buckets separados no Supabase Storage. As políticas permitem leitura pública e restringem os uploads autenticados à pasta do próprio utilizador.
 - **Escritas críticas:** Express autentica o JWT Supabase e obtém a função do utilizador na tabela `users`. Criação/publicação de serviços, mensagens, propostas e conclusão de negociação são executados exclusivamente no backend.
@@ -94,13 +94,13 @@ O frontend e o backend têm de apontar para o mesmo projecto Supabase. O fronten
 
    As migrations criam as tabelas, RLS e buckets de imagens (`store-logos`, `provider-media` e `products`). A segunda migration remove tabelas/campos comerciais antigos; faz backup antes de aplicá-la se o projecto remoto já tiver dados que precises. `sequelize.sync()` continua seguro após as migrations: cria apenas tabelas em falta, sem `force` nem `alter`, e o backend actualiza as políticas RLS no arranque.
 3. Em **Supabase > Project Settings > Database**, copia a connection string PostgreSQL do projecto. Usa a string do Session Pooler se a ligação directa não estiver disponível e preenche `DATABASE_URL` no `backend/.env`. Define também `DATABASE_SSL=true`; essa ligação é usada apenas pelo servidor e nunca deve ser exposta ao frontend.
-4. Preenche as variáveis nos ficheiros `backend/.env` e `frontend/.env`. Se algum não existir, cria-o com os nomes de variáveis necessários; deixa vazias as variáveis para as quais ainda não tens valor. A `DATABASE_URL` tem de ser a connection string real do PostgreSQL Supabase; gera também a chave de cifragem:
+4. Preenche as variáveis nos ficheiros `backend/.env` e `frontend/.env`. Define `VITE_API_URL` no `frontend/.env` como a origem do backend Express, sem `/api` (por exemplo, `http://localhost:3001`); o mesmo endereço é usado pelo proxy de desenvolvimento e pelas chamadas do frontend. Se algum ficheiro não existir, cria-o com os nomes de variáveis necessários; deixa vazias as variáveis para as quais ainda não tens valor. A `DATABASE_URL` tem de ser a connection string real do PostgreSQL Supabase; gera também a chave de cifragem:
 
    ```sh
    openssl rand -base64 32
    ```
 
-   Usa o mesmo projecto nos dois URLs Supabase. Coloca a connection string PostgreSQL e `DATABASE_SSL=true` somente em `backend/.env`, tal como o resultado do OpenSSL em `FIELD_ENCRYPTION_KEY`. Não partilhes nem commits estes ficheiros.
+   Usa o mesmo projecto nos dois URLs Supabase.    Coloca a connection string PostgreSQL e `DATABASE_SSL=true` somente em `backend/.env`, tal como o resultado do OpenSSL em `FIELD_ENCRYPTION_KEY`. `VITE_API_URL` é uma variável pública do frontend e pode ser incluída no build; não coloques nela credenciais. Não partilhes nem commits estes ficheiros.
 5. Arranca o backend e o frontend. O banco, Auth e leituras públicas passam pelo projecto Supabase escolhido:
 
    ```sh
@@ -118,7 +118,7 @@ Mantém o backend e o frontend em execução e inicia o túnel para o frontend:
 ngrok http 5173
 ```
 
-Abre `https://written-dullness-hexagram.ngrok-free.dev`. O proxy do Vite encaminha `/api` para `http://localhost:3001`, pelo que não é necessário expor uma segunda porta; mantém também o backend ligado ao mesmo PostgreSQL/Supabase usado pelo frontend. O domínio ngrok está explicitamente permitido pelo Vite e pelo CORS do backend, sem permitir origens arbitrárias. Se o endereço público mudar, actualiza-o em `frontend/vite.config.ts`, `backend/src/app.ts` (ou define `FRONTEND_ORIGINS`) e nas URLs de redireccionamento do Auth Supabase.
+Abre `https://written-dullness-hexagram.ngrok-free.dev`. O proxy do Vite encaminha `/api` para a origem definida em `VITE_API_URL`, pelo que não é necessário expor uma segunda porta; mantém também o backend ligado ao mesmo PostgreSQL/Supabase usado pelo frontend. O domínio ngrok está explicitamente permitido pelo Vite e pelo CORS do backend, sem permitir origens arbitrárias. Se o endereço público mudar, actualiza-o em `frontend/vite.config.ts`, `backend/src/app.ts` (ou define `FRONTEND_ORIGINS`) e nas URLs de redireccionamento do Auth Supabase.
 
 Se estiveres a usar um projecto Supabase gerido, adiciona também `https://written-dullness-hexagram.ngrok-free.dev/**` à lista **Authentication → URL Configuration → Redirect URLs** no dashboard desse projecto. `supabase/config.toml` cobre apenas a configuração local da Supabase CLI.
 

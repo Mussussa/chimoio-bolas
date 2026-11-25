@@ -4,6 +4,7 @@ import { sendError, sendSuccess } from "../http/responses.js";
 import { Service, ServiceProvider, User } from "../models/index.js";
 import { SERVICE_CATEGORIES } from "../models/ServiceProvider.js";
 
+// Regista o perfil de prestador e actualiza o papel da conta; o frontend conclui a adesão ao painel de prestador.
 export const registerProvider: RequestHandler = async (req, res, next) => {
   try {
     const user = req.appUser as User;
@@ -38,6 +39,7 @@ export const registerProvider: RequestHandler = async (req, res, next) => {
   }
 };
 
+// Carrega perfil e serviços do prestador autenticado; o frontend preenche o painel de gestão.
 export const getMyProviderDashboard: RequestHandler = async (req, res, next) => {
   try {
     const user = req.appUser as User;
@@ -59,6 +61,7 @@ export const getMyProviderDashboard: RequestHandler = async (req, res, next) => 
   }
 };
 
+// Actualiza os dados do perfil do prestador; o frontend apresenta as alterações no painel e no perfil público.
 export const updateMyProvider: RequestHandler = async (req, res, next) => {
   try {
     const user = req.appUser as User;
@@ -104,6 +107,7 @@ export const updateMyProvider: RequestHandler = async (req, res, next) => {
   }
 };
 
+// Publica um serviço do prestador; o frontend passa a apresentá-lo no perfil público e no catálogo.
 export const publishProviderService: RequestHandler = async (req, res, next) => {
   try {
     const user = req.appUser as User;
@@ -147,6 +151,7 @@ export const publishProviderService: RequestHandler = async (req, res, next) => 
   }
 };
 
+// Actualiza um serviço do prestador; o frontend reflecte as alterações no painel e na página pública.
 export const updateMyService: RequestHandler = async (req, res, next) => {
   try {
     const user = req.appUser as User;
@@ -181,6 +186,7 @@ export const updateMyService: RequestHandler = async (req, res, next) => {
   }
 };
 
+// Remove um serviço do prestador; o frontend deixa de o mostrar no painel e no perfil público.
 export const deleteMyService: RequestHandler = async (req, res, next) => {
   try {
     const user = req.appUser as User;

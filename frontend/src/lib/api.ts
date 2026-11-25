@@ -9,6 +9,7 @@ import type {
   ProductForm,
   Profile,
   ProviderForm,
+  ProviderReview,
   Service,
   ServiceProvider,
   Store,
@@ -37,11 +38,15 @@ export async function loadCatalog(): Promise<Catalog> {
   }
   const client = supabase;
 
-  const [storeResults, productResults, providerResults, serviceResults, mapStores] = await Promise.all([
+  const [storeResults, productResults, providerResults, serviceResults, providerReviewResults, mapStores] = await Promise.all([
     client.from("stores").select("*").order("created_at", { ascending: false }),
     client.from("products").select("*").order("created_at", { ascending: false }),
     client.from("service_providers").select("*").order("created_at", { ascending: false }),
     client.from("services").select("*").eq("published", true).order("created_at", { ascending: false }),
+    client.from("public_reviews")
+      .select("target_id,rating,comment,created_at")
+      .eq("target_type", "service_provider")
+      .order("created_at", { ascending: false }),
     loadAllMapStores(async (offset, limit) => {
       const result = await client
         .from("map_stores")
@@ -51,7 +56,8 @@ export async function loadCatalog(): Promise<Catalog> {
       return { data: result.data as MapStore[] | null, error: result.error };
     })
   ]);
-  const failed = [storeResults, productResults, providerResults, serviceResults].find((result) => result.error);
+  const failed = [storeResults, productResults, providerResults, serviceResults, providerReviewResults]
+    .find((result) => result.error);
   if (failed?.error) throw failed.error;
 
   return {
@@ -62,7 +68,8 @@ export async function loadCatalog(): Promise<Catalog> {
       images: normalizeImageList(product.images)
     })),
     providers: (providerResults.data ?? []) as ServiceProvider[],
-    services: (serviceResults.data ?? []) as Service[]
+    services: (serviceResults.data ?? []) as Service[],
+    providerReviews: (providerReviewResults.data ?? []) as ProviderReview[]
   };
 }
 
@@ -437,7 +444,8 @@ export function completeNegotiation(session: Session, negotiationId: string) {
 }
 
 export async function api<T>(path: string, session?: Session, options: { method?: string; body?: unknown } = {}): Promise<T> {
-  const response = await fetch(`/api${path}`, {
+  const apiServer = import.meta.env.VITE_API_URL?.replace(/\/+$/, "") ?? "";
+  const response = await fetch(`${apiServer}/api${path}`, {
     method: options.method ?? "GET",
     headers: {
       ...(session ? { authorization: `Bearer ${session.access_token}` } : {}),

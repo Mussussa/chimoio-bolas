@@ -2,6 +2,7 @@ import type { RequestHandler } from "express";
 import { sendError, sendSuccess } from "../http/responses.js";
 import { Store } from "../models/index.js";
 
+// Marca a loja como verificada; o painel administrativo usa a resposta para actualizar o estado da loja.
 export const verifyStore: RequestHandler = async (req, res, next) => {
   try {
     const storeId = req.params.id as string;

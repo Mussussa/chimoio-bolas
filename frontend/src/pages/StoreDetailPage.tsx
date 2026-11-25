@@ -98,17 +98,17 @@ export default function StoreDetailPage({ session, profile, busy, onReview, onSt
         {store.logoUrl && <img className="store-detail-logo" src={store.logoUrl} alt={`Logótipo de ${store.name}`} />}
         <div>
           <span className={`tag ${store.verified ? "tag-verified" : "tag-new-store"}`}>
-            {store.verified ? "Loja verificada ✓" : "Pendente de verificação"}
+            {store.verified ? "Loja verificada ✓" : "Loja não verificada"}
           </span>
           <h1>{store.name}</h1>
           <p>{store.category.join(" · ")}</p>
         </div>
-        <SharePageButton title={store.name} text={`Conhece a loja ${store.name} em Chimoio Boladas.`} label="Partilhar loja" />
+        <SharePageButton title={store.name} text={`Conhece a loja ${store.name} na YELLOW, em Chimoio.`} label="Partilhar loja" />
       </header>
       <p className="public-detail-copy">{store.description}</p>
       <p className="listing-location">{store.address}</p>
       <MapExplorer stores={[mapStore]} gps={null} loading={false} error={null} />
-      {session && profile && profile.role !== "admin" && profile.id !== store.ownerId && store.verified && (
+      {session && profile && profile.role !== "admin" && profile.id !== store.ownerId && (
         <form className="panel store-contact-form" onSubmit={(event) => void contactStore(event)}>
           <h2>Falar com {store.name}</h2>
           {products.length > 0 && (
@@ -149,11 +149,10 @@ export default function StoreDetailPage({ session, profile, busy, onReview, onSt
           <button type="submit" className="button button-dark" disabled={busy}>Iniciar conversa</button>
         </form>
       )}
-      {!store.verified && <p className="geo-note">Esta loja aguarda verificação; a conversa directa ficará disponível após aprovação.</p>}
-      {store.verified && !session && (
+      {!session && (
         <p className="geo-note">Podes visitar e partilhar esta loja sem conta. Para avaliar ou enviar mensagem, <Link to="/conta">inicia sessão ou cria uma conta de cliente</Link>.</p>
       )}
-      {store.verified && session && profile?.role === "admin" && (
+      {session && profile?.role === "admin" && (
         <p className="geo-note">As contas administrativas não podem iniciar conversas com lojas.</p>
       )}
 
@@ -181,7 +180,7 @@ export default function StoreDetailPage({ session, profile, busy, onReview, onSt
                     imageUrl={product.images?.[0]}
                   />
                 </div>
-                {session && profile && profile.role !== "admin" && profile.id !== store.ownerId && store.verified && (
+                {session && profile && profile.role !== "admin" && profile.id !== store.ownerId && (
                   <button
                     type="button"
                     className="button button-dark full-button product-conversation-button"
@@ -191,12 +190,7 @@ export default function StoreDetailPage({ session, profile, busy, onReview, onSt
                     Ir para o chat
                   </button>
                 )}
-                {session && profile && profile.role !== "admin" && profile.id !== store.ownerId && !store.verified && (
-                  <button type="button" className="button button-outline full-button" disabled title="O chat fica disponível quando a loja for verificada.">
-                    Chat disponível após verificação
-                  </button>
-                )}
-                {store.verified && !session && (
+                {!session && (
                   <Link className="button button-outline full-button" to="/conta">
                     Inicia sessão para conversar sobre este produto
                   </Link>
@@ -207,7 +201,7 @@ export default function StoreDetailPage({ session, profile, busy, onReview, onSt
         ) : <p className="empty">Esta loja ainda não publicou produtos.</p>}
       </section>
       <ReviewSection reviews={reviews} />
-      {profile?.role === "client" && store.verified && <ReviewForm targetType="store" targetId={store.id} targetName={store.name} busy={busy} onSubmit={onReview} />}
+      {profile?.role === "client" && <ReviewForm targetType="store" targetId={store.id} targetName={store.name} busy={busy} onSubmit={onReview} />}
     </article>
   );
 }

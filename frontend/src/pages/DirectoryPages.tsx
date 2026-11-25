@@ -57,7 +57,7 @@ export function ProductsDirectoryPage({
             const store = stores.find((item) => item.id === product.store_id);
             const productHref = store ? storeProductHref(store.slug, product.id) : `/produtos/${encodeURIComponent(product.id)}`;
             const canContactStore = Boolean(
-              store?.verified && profile && profile.role !== "admin" && store.owner_id !== profile.id
+              store && profile && profile.role !== "admin" && store.owner_id !== profile.id
             );
             const shareText = store
               ? `${product.name} na loja ${store.name} · ${Number(product.price).toLocaleString("pt-MZ")} MT.`
@@ -70,9 +70,10 @@ export function ProductsDirectoryPage({
                 <p>{product.description}</p>
                 <div className="listing-foot">
                   <b>{Number(product.price).toLocaleString("pt-MZ")} MT</b>
+              
                   {store && <Link to={`/lojas/${encodeURIComponent(store.slug)}`}>{store.name}</Link>}
                 </div>
-                {store && <p className="listing-location">{store.verified ? "Loja verificada" : "Loja pendente de verificação"} · {store.address}</p>}
+                {store && <p className="listing-location">{store.verified ? "Loja verificada" : "Loja não verificada"} · {store.address}</p>}
                 <SharePageButton
                   title={product.name}
                   text={shareText}
@@ -90,12 +91,7 @@ export function ProductsDirectoryPage({
                     Ir para o chat
                   </button>
                 )}
-                {store && !store.verified && profile && profile.role !== "admin" && store.owner_id !== profile.id && (
-                  <button type="button" className="button button-outline full-button" disabled title="O chat fica disponível quando a loja for verificada.">
-                    Chat disponível após verificação
-                  </button>
-                )}
-                {store?.verified && !profile && (
+                {store && !profile && (
                   <Link className="button button-outline full-button" to="/conta">
                     Inicia sessão para conversar sobre este produto
                   </Link>
@@ -145,20 +141,20 @@ export function StoresDirectoryPage({
           {filteredStores.map((store) => {
             const storeHref = `/lojas/${encodeURIComponent(store.slug)}`;
             const canContactStore = Boolean(
-              store.verified && profile && profile.role !== "admin" && store.owner_id !== profile.id
+              profile && profile.role !== "admin" && store.owner_id !== profile.id
             );
             return (
               <article className="listing-card store-card" key={store.id}>
                 {store.logo_url && <Link to={storeHref}><img className="service-listing-image store-listing-logo" src={store.logo_url} alt={`Logótipo de ${store.name}`} /></Link>}
                 <span className={`tag ${store.verified ? "tag-verified" : "tag-new-store"}`}>
-                  {store.verified ? "Loja verificada ✓" : "Pendente de verificação"} · {parseDirectoryCategories(store.category).join(" · ")}
+                  {store.verified ? "Loja verificada ✓" : "Loja não verificada"} · {parseDirectoryCategories(store.category).join(" · ")}
                 </span>
                 <h2><Link to={storeHref}>{store.name}</Link></h2>
                 <p>{store.description}</p>
                 <div className="listing-foot"><span>{store.address}</span><Link to={storeHref}>Ver loja</Link></div>
                 <SharePageButton
                   title={store.name}
-                  text={`Conhece a loja ${store.name} em Chimoio Boladas.`}
+                  text={`Conhece a loja ${store.name} na YELLOW, em Chimoio.`}
                   label="Partilhar loja"
                   url={`${window.location.origin}${storeHref}`}
                   imageUrl={store.logo_url ?? undefined}
@@ -173,12 +169,7 @@ export function StoresDirectoryPage({
                     Ir para o chat
                   </button>
                 )}
-                {!store.verified && profile && profile.role !== "admin" && store.owner_id !== profile.id && (
-                  <button type="button" className="button button-outline full-button" disabled title="O chat fica disponível quando a loja for verificada.">
-                    Chat disponível após verificação
-                  </button>
-                )}
-                {store.verified && !profile && (
+                {!profile && (
                   <Link className="button button-outline full-button" to="/conta">
                     Inicia sessão para conversar com a loja
                   </Link>
@@ -238,7 +229,7 @@ export function ServicesDirectoryPage({
                 {provider && <Link className="detail-inline-link" to={`/prestadores/${encodeURIComponent(provider.id)}`}>Ver perfil do prestador</Link>}
                 <SharePageButton
                   title={service.title}
-                  text={`Conhece o serviço ${service.title} em Chimoio Boladas.`}
+                  text={`Conhece o serviço ${service.title} na YELLOW, em Chimoio.`}
                   label="Partilhar serviço"
                   url={`${window.location.origin}${serviceHref}`}
                   imageUrl={service.images?.[0]}

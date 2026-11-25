@@ -3,7 +3,7 @@ import { loadCatalog as fetchCatalog } from "../lib/api";
 import type { Catalog, Notice } from "../lib/types";
 import type { Dispatch, SetStateAction } from "react";
 
-const emptyCatalog: Catalog = { stores: [], mapStores: [], products: [], providers: [], services: [] };
+const emptyCatalog: Catalog = { stores: [], mapStores: [], products: [], providers: [], services: [], providerReviews: [] };
 
 export default function useCatalog(setNotice: Dispatch<SetStateAction<Notice>>) {
   const [catalog, setCatalog] = useState<Catalog>(emptyCatalog);

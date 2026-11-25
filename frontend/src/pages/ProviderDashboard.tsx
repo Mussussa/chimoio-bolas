@@ -172,7 +172,7 @@ export default function ProviderDashboard({ session, refreshCatalog, onProfileCh
           <p>Apresente as suas competências e mantenha os serviços atualizados.</p>
         </div>
         <span className={`provider-status ${dashboard?.provider.verified ? "is-verified" : ""}`}>
-          {dashboard?.provider.verified ? "Perfil verificado" : "Perfil em análise"}
+          {dashboard?.provider.verified ? "Perfil verificado" : "Perfil não verificado"}
         </span>
       </header>
 

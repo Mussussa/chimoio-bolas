@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getStoreLocations, loadAllMapStores } from "./mapStores";
+import { getNearbyStoreLocations, getStoreLocations, loadAllMapStores } from "./mapStores";
 import type { MapStore } from "./types";
 
 function createStore(id: string, latitude: number | string | null = -19.1164, longitude: number | string | null = 33.4833): MapStore {
@@ -50,5 +50,26 @@ describe("map stores", () => {
     expect(locations).toHaveLength(2);
     expect(locations[0].stores.map((store) => store.id)).toEqual(["first", "same-location"]);
     expect(locations[1].stores.map((store) => store.id)).toEqual(["another-location"]);
+  });
+
+  it("filters map stores to three kilometres from the selected centre and category", () => {
+    const locations = getStoreLocations([
+      createStore("nearby", -19.12, 33.48),
+      { ...createStore("different-category", -19.12, 33.48), category: ["Moda"] },
+      createStore("far-away", -19.2, 33.48)
+    ]);
+
+    const filtered = getNearbyStoreLocations(locations, [-19.1164, 33.4833], "Alimentação");
+
+    expect(filtered.flatMap((location) => location.stores.map((store) => store.id))).toEqual(["nearby"]);
+  });
+
+  it("shows all locations when no GPS or neighborhood is selected", () => {
+    const locations = getStoreLocations([
+      createStore("first", -19.12, 33.48),
+      createStore("far-away", -19.2, 33.48)
+    ]);
+
+    expect(getNearbyStoreLocations(locations, null, "")).toHaveLength(2);
   });
 });

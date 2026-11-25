@@ -3,6 +3,7 @@ import { Op } from "sequelize";
 import { sendError, sendSuccess } from "../http/responses.js";
 import { Product, Review, Service, ServiceProvider, Store, User } from "../models/index.js";
 
+// Carrega loja, produtos e avaliações públicas; o frontend usa-os na página de detalhe da loja.
 export const getPublicStore: RequestHandler = async (req, res, next) => {
   try {
     const identifier = req.params.slug as string;
@@ -25,6 +26,7 @@ export const getPublicStore: RequestHandler = async (req, res, next) => {
   }
 };
 
+// Carrega um produto e a respectiva loja; o frontend abre a página da loja com esse produto em destaque.
 export const getPublicProduct: RequestHandler = async (req, res, next) => {
   try {
     const product = await Product.findByPk(req.params.id as string);
@@ -37,6 +39,7 @@ export const getPublicProduct: RequestHandler = async (req, res, next) => {
   }
 };
 
+// Carrega o perfil público, serviços e avaliações do prestador; o frontend mostra o perfil e permite iniciar negociação.
 export const getPublicProvider: RequestHandler = async (req, res, next) => {
   try {
     const provider = await ServiceProvider.findOne({
@@ -61,12 +64,13 @@ export const getPublicProvider: RequestHandler = async (req, res, next) => {
   }
 };
 
+// Disponibiliza avaliações públicas; no frontend actual, as páginas recebem-nas junto aos detalhes da loja ou prestador.
 export const getPublicReviews: RequestHandler = async (req, res, next) => {
   try {
     const targetType = req.params.targetType as "store" | "service_provider";
     const targetId = req.params.targetId as string;
     const target = targetType === "store"
-      ? await Store.findOne({ where: { id: targetId, verified: true }, attributes: ["id"] })
+      ? await Store.findByPk(targetId, { attributes: ["id"] })
       : await ServiceProvider.findOne({ where: { id: targetId, platformMember: true }, attributes: ["id"] });
     if (!target) return sendError(res, 404, "Perfil não encontrado.");
 

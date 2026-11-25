@@ -2,7 +2,7 @@ import type { RequestHandler } from "express";
 import { sendError, sendSuccess } from "../http/responses.js";
 import { Product, Store, User } from "../models/index.js";
 
-// Obter os detalhes da loja do lojista autenticado
+// Carrega os dados da loja do lojista; o frontend preenche o formulário de gestão da loja.
 export const getMyStore: RequestHandler = async (req, res, next) => {
   try {
     const user = req.appUser as User;
@@ -14,7 +14,7 @@ export const getMyStore: RequestHandler = async (req, res, next) => {
   }
 };
 
-// Atualizar os dados e o logótipo da loja do lojista autenticado
+// Actualiza os dados e o logótipo da loja; o frontend mostra os dados guardados no painel do lojista.
 export const updateMyStore: RequestHandler = async (req, res, next) => {
   try {
     const user = req.appUser as User;
@@ -54,7 +54,7 @@ export const updateMyStore: RequestHandler = async (req, res, next) => {
   }
 };
 
-// Listar todos os produtos da loja do lojista autenticado
+// Lista os produtos da loja; o frontend apresenta-os na gestão de produtos do lojista.
 export const getMyProducts: RequestHandler = async (req, res, next) => {
   try {
     const user = req.appUser as User;
@@ -72,7 +72,7 @@ export const getMyProducts: RequestHandler = async (req, res, next) => {
   }
 };
 
-// Atualizar um produto existente da loja
+// Actualiza um produto da loja; o frontend reflecte as alterações na lista de produtos.
 export const updateProduct: RequestHandler = async (req, res, next) => {
   try {
     const user = req.appUser as User;
@@ -100,7 +100,7 @@ export const updateProduct: RequestHandler = async (req, res, next) => {
   }
 };
 
-// Apagar um produto da loja
+// Remove um produto da loja; o frontend deixa de o apresentar na gestão e no catálogo.
 export const deleteProduct: RequestHandler = async (req, res, next) => {
   try {
     const user = req.appUser as User;

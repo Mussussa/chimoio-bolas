@@ -177,7 +177,7 @@ export default function MerchantDashboard({ session, refreshKey, children }: Mer
         </div>
         {store?.logoUrl && <img className="merchant-store-logo merchant-store-logo-large" src={store.logoUrl} alt={`Logótipo de ${store.name}`} />}
         <span className={`merchant-status ${store?.verified ? "is-verified" : ""}`}>
-          {store?.verified ? "Loja verificada" : "Aguardando verificação"}
+          {store?.verified ? "Loja verificada" : "Loja não verificada"}
         </span>
       </header>
 

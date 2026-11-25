@@ -1,4 +1,4 @@
-const cacheName = "chimoio-boladas-shell-v1";
+const cacheName = "yellow-shell-v1";
 const appShell = ["/", "/index.html", "/manifest.webmanifest", "/favicon.svg"];
 const worker = self as unknown as ServiceWorkerGlobalScope;
 

@@ -2,6 +2,7 @@ import type { RequestHandler } from "express";
 import { sendError, sendSuccess } from "../http/responses.js";
 import { User, Store } from "../models/index.js";
 
+// Devolve o perfil e a loja do utilizador autenticado; o frontend usa-os para carregar a conta e decidir as opções disponíveis.
 export const getProfile: RequestHandler = async (req, res, next) => {
   try {
     const user = req.appUser;
@@ -34,6 +35,7 @@ export const getProfile: RequestHandler = async (req, res, next) => {
   }
 };
 
+// Actualiza os dados pessoais do utilizador; o frontend refresca o nome, contacto e avatar apresentados na conta.
 export const updateProfile: RequestHandler = async (req, res, next) => {
   try {
     const user = req.appUser as User;

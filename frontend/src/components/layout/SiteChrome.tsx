@@ -17,7 +17,7 @@ export function SiteHeader({ profile, pendingNegotiations, onSignOut }: HeaderPr
   };
   return (
     <header className="topbar">
-      <Link className="brand" to="/"><span className="brand-icon">CB</span><span>Chimoio <b>Boladas</b><small>NEGÓCIOS LOCAIS</small></span></Link>
+      <Link className="brand" to="/"><span className="brand-icon">Y</span><span><b>YELLOW</b><small>NEGÓCIOS LOCAIS · CHIMOIO</small></span></Link>
       <nav aria-label="Navegação principal">
         <Link to="/">Explorar</Link>
         {profile && profile.role !== "admin" && <Link to="/mensagens">Mensagens{pendingNegotiations > 0 && <span className="nav-badge" aria-label={`${pendingNegotiations} pendentes`}>{pendingNegotiations}</span>}</Link>}
@@ -66,7 +66,7 @@ export function Hero() {
 
 export function VisitorGuide() {
   return (
-    <aside className="visitor-guide" aria-label="Como usar o Chimoio Boladas">
+    <aside className="visitor-guide" aria-label="Como usar a YELLOW">
       <strong>Como usar</strong>
       <ol>
         <li>Escolhe uma categoria ou pesquisa o que procuras.</li>
@@ -79,6 +79,6 @@ export function VisitorGuide() {
 
 export function SiteFooter() {
   return (
-    <footer><span>CHIMOIO BOLADAS</span><span>Marketplace local gratuito · preços de produtos e serviços em MT</span></footer>
+    <footer><span>YELLOW</span><span>Marketplace local gratuito · preços de produtos e serviços em MT</span></footer>
   );
 }

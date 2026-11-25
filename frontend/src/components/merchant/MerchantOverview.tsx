@@ -14,7 +14,7 @@ export default function MerchantOverview({ store, products, onEditStore, onManag
       <div className="merchant-stats">
         <article><span>Produtos publicados</span><strong>{products.length}</strong></article>
         <article><span>Categorias da loja</span><strong>{store.category.length}</strong></article>
-        <article><span>Estado</span><strong>{store.verified ? "Verificada" : "Em análise"}</strong></article>
+        <article><span>Estado</span><strong>{store.verified ? "Verificada" : "Não verificada"}</strong></article>
       </div>
       <div className="merchant-overview-grid">
         <section className="merchant-panel">

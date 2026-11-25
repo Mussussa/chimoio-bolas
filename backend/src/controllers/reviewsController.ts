@@ -2,6 +2,7 @@ import type { RequestHandler } from "express";
 import { sendError, sendSuccess } from "../http/responses.js";
 import { Review, ServiceProvider, Store, User } from "../models/index.js";
 
+// Regista a avaliação de uma loja ou prestador; o frontend pode actualizar a classificação e a lista de avaliações.
 export const createReview: RequestHandler = async (req, res, next) => {
   try {
     const user = req.appUser as User;
@@ -10,7 +11,7 @@ export const createReview: RequestHandler = async (req, res, next) => {
     };
     const stars = Number(rating);
     if (targetType === "store") {
-      const store = await Store.findOne({ where: { id: targetId, verified: true } });
+      const store = await Store.findByPk(targetId);
       if (!store) return sendError(res, 404, "Negócio não encontrado.");
       if (store.ownerId === user.id) return sendError(res, 403, "Não pode avaliar o seu próprio negócio.");
     } else {

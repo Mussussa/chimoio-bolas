@@ -1,6 +1,7 @@
 import type { MapStore } from "./types";
 
 export type StoreLocation = { latitude: number; longitude: number; stores: Array<MapStore & { latitude: number; longitude: number }> };
+export type MapCenter = [number, number];
 
 const MAP_STORE_PAGE_SIZE = 1000;
 
@@ -46,4 +47,41 @@ export function getStoreLocations(stores: MapStore[]): StoreLocation[] {
   }
 
   return [...byCoordinates.values()];
+}
+
+export function getNearbyStoreLocations(
+  locations: StoreLocation[],
+  center: MapCenter | null,
+  category: string,
+  radiusKm = 3
+): StoreLocation[] {
+  return locations.flatMap((location) => {
+    const distance = center
+      ? distanceInKm(center[0], center[1], location.latitude, location.longitude)
+      : null;
+    if (distance !== null && distance > radiusKm) return [];
+
+    const stores = category
+      ? location.stores.filter((store) => parseStoreCategories(store.category).includes(category))
+      : location.stores;
+    return stores.length ? [{ ...location, stores }] : [];
+  });
+}
+
+export function distanceInKm(latitude1: number, longitude1: number, latitude2: number, longitude2: number): number {
+  const radians = (value: number) => value * Math.PI / 180;
+  const deltaLatitude = radians(latitude2 - latitude1);
+  const deltaLongitude = radians(longitude2 - longitude1);
+  const arc = Math.sin(deltaLatitude / 2) ** 2 +
+    Math.cos(radians(latitude1)) * Math.cos(radians(latitude2)) * Math.sin(deltaLongitude / 2) ** 2;
+  return 6371 * 2 * Math.atan2(Math.sqrt(arc), Math.sqrt(1 - arc));
+}
+
+function parseStoreCategories(category: string | string[]): string[] {
+  if (Array.isArray(category)) return category;
+  return category
+    .replace(/^\{|\}$/g, "")
+    .split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/)
+    .map((item) => item.trim().replace(/^"(.*)"$/, "$1"))
+    .filter(Boolean);
 }
