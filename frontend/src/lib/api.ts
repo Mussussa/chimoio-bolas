@@ -223,7 +223,8 @@ export type StoreConversation = {
   productId: string | null;
   createdAt: string;
   store: Pick<MerchantStore, "id" | "name" | "slug" | "logoUrl">;
-  product: { id: string; name: string } | null;
+  client?: { id: string; name: string; avatarUrl: string | null };
+  product: { id: string; name: string; images: string[] } | null;
   messages: StoreConversationMessage[];
 };
 
@@ -251,7 +252,12 @@ export async function startStoreConversation(session: Session, body: { storeId: 
 
 export async function loadStoreConversations(session: Session): Promise<StoreConversation[]> {
   const result = await api<{ conversations: StoreConversation[] }>("/store-conversations", session);
-  return result.conversations;
+  return result.conversations.map((conversation) => ({
+    ...conversation,
+    product: conversation.product
+      ? { ...conversation.product, images: normalizeImageList(conversation.product.images) }
+      : null
+  }));
 }
 
 export async function loadStoreMessages(session: Session, conversationId: string): Promise<StoreConversationMessage[]> {
@@ -382,7 +388,12 @@ function parsePostgresCategories(value: string): string[] {
 
 export async function loadNegotiations(session: Session): Promise<Negotiation[]> {
   const result = await api<{ negotiations: Negotiation[] }>("/negotiations", session);
-  return result.negotiations;
+  return result.negotiations.map((negotiation) => ({
+    ...negotiation,
+    service: negotiation.service
+      ? { ...negotiation.service, images: normalizeImageList(negotiation.service.images) }
+      : undefined
+  }));
 }
 
 export function registerProvider(session: Session, body: ProviderForm) {
@@ -434,9 +445,19 @@ export async function api<T>(path: string, session?: Session, options: { method?
     },
     ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) })
   });
-  const result = await response.json() as { success?: boolean; data?: T; message?: string; error_code?: string };
-  if (!response.ok) throw new Error(result.message ?? `Pedido falhou (${response.status}).`);
-  if (!result.success || result.data === undefined) throw new Error("A API devolveu uma resposta inválida.");
+  const responseBody = await response.text();
+  let result: { success?: boolean; data?: T; message?: string; error_code?: string } | undefined;
+  if (responseBody.trim()) {
+    try {
+      result = JSON.parse(responseBody) as typeof result;
+    } catch (error) {
+      if (!(error instanceof SyntaxError)) throw error;
+      if (!response.ok) throw new Error(`Pedido falhou (${response.status}).`);
+      throw new Error("A API devolveu uma resposta inválida.");
+    }
+  }
+  if (!response.ok) throw new Error(result?.message ?? `Pedido falhou (${response.status}).`);
+  if (!result?.success || result.data === undefined) throw new Error("A API devolveu uma resposta inválida.");
   return result.data;
 }
 //frontend/src/lib/api.ts

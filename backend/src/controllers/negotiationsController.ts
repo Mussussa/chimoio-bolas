@@ -24,7 +24,23 @@ export const listNegotiations: RequestHandler = async (req, res, next) => {
     const negotiations = await Negotiation.findAll({
       where,
       order: [["createdAt", "DESC"]],
-      include: [{ model: Message, as: "messages", separate: true, order: [["createdAt", "ASC"]] }]
+      include: [
+        { model: User, as: "client", attributes: ["id", "name"] },
+        {
+          model: ServiceProvider,
+          as: "provider",
+          attributes: ["id", "userId"],
+          include: [{ model: User, as: "user", attributes: ["id", "name"] }]
+        },
+        { model: Service, as: "service", attributes: ["id", "title", "price", "images"] },
+        {
+          model: Message,
+          as: "messages",
+          separate: true,
+          order: [["createdAt", "ASC"]],
+          include: [{ model: User, as: "sender", attributes: ["id", "name"] }]
+        }
+      ]
     });
     return sendSuccess(res, { negotiations }, 200, "Negociações carregadas.");
   } catch (error) {

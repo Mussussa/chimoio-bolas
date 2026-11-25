@@ -62,15 +62,20 @@ export type Service = {
 
 export type Negotiation = {
   id: string;
-  client_id: string;
+  clientId: string;
   status: string;
-  agreed_price: string | null;
+  agreedPrice: string | null;
+  client?: { id: string; name: string };
+  provider?: { id: string; user?: { id: string; name: string } };
+  service?: { id: string; title: string; price: string; images?: string[] };
   messages: Array<{
     id: string;
-    sender_id: string;
+    senderId: string;
     content: string;
-    message_type: string;
-    proposal_amount: string | null;
+    messageType: string;
+    proposalAmount: string | null;
+    createdAt: string;
+    sender?: { id: string; name: string };
   }>;
 };
 

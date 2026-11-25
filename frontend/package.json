@@ -7,7 +7,7 @@
     "dev": "vite --host 0.0.0.0",
     "build": "vite build && tsc -p tsconfig.sw.json",
     "preview": "vite preview --host 0.0.0.0",
-    "test": "tsc --noEmit && vitest run src/lib/mapStores.test.ts"
+    "test": "tsc --noEmit && vitest run src/lib/mapStores.test.ts src/lib/api.test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.4",

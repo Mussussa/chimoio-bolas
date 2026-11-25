@@ -29,7 +29,8 @@ export const listStoreConversations: RequestHandler = async (req, res, next) => 
       order: [["createdAt", "DESC"]],
       include: [
         { model: Store, as: "store", attributes: ["id", "name", "slug", "logoUrl"] },
-        { model: Product, as: "product", attributes: ["id", "name"], required: false },
+        { model: User, as: "client", attributes: ["id", "name", "avatarUrl"] },
+        { model: Product, as: "product", attributes: ["id", "name", "images"], required: false },
         {
           model: StoreMessage,
           as: "messages",

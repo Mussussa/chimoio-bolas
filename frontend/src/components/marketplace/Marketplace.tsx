@@ -1,10 +1,12 @@
 import { useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import type { MapStore, Product, Profile, Service, ServiceProvider, Store } from "../../lib/types";
 import type { ReviewPayload } from "../../lib/api";
+import { providerServiceHref, storeProductHref } from "../../lib/publicLinks";
 import MapExplorer from "./MapExplorer";
 import ReviewForm from "./ReviewForm";
 import { CatalogNavigation } from "./DirectoryControls";
+import SharePageButton from "./SharePageButton";
 
 type MarketplaceProps = Readonly<{
   stores: Store[];
@@ -26,6 +28,7 @@ type MarketplaceProps = Readonly<{
   onClearLocation: () => void;
   onPriceChange: (productId: string, value: string) => void;
   onUpdatePrice: (productId: string) => void;
+  onStartStoreConversation: (storeId: string, content: string, productId?: string) => Promise<string | null>;
   onStartNegotiation: (serviceId: string) => void;
   onReview: (review: ReviewPayload) => Promise<boolean>;
 }>;
@@ -68,9 +71,11 @@ export default function Marketplace({
   onClearFilters,
   onPriceChange,
   onUpdatePrice,
+  onStartStoreConversation,
   onStartNegotiation,
   onReview
 }: MarketplaceProps) {
+  const navigate = useNavigate();
   const matchingStores = useMemo(() => stores.filter((store) => {
     const categories = parseCategories(store.category);
     const term = search.trim().toLocaleLowerCase();
@@ -106,8 +111,11 @@ export default function Marketplace({
         {products.map((product) => {
           const store = stores.find((item) => item.id === product.store_id);
           const productHref = store
-            ? `/lojas/${encodeURIComponent(store.slug)}#produto-${product.id}`
-            : `/produtos/${product.id}`;
+            ? storeProductHref(store.slug, product.id)
+            : `/produtos/${encodeURIComponent(product.id)}`;
+          const shareText = store
+            ? `${product.name} na loja ${store.name} · ${Number(product.price).toLocaleString("pt-MZ")} MT.`
+            : `${product.name} · ${Number(product.price).toLocaleString("pt-MZ")} MT.`;
           return (
             <article className="listing-card" key={product.id}>
               <span className="tag">PRODUTO · {product.category}</span>
@@ -118,9 +126,44 @@ export default function Marketplace({
                 <b>{Number(product.price).toLocaleString("pt-MZ")} MT</b>
                 {store ? <Link to={`/lojas/${store.slug}`}>{store.name}</Link> : <span>Loja local</span>}
               </div>
+              <SharePageButton
+                title={product.name}
+                text={shareText}
+                label="Partilhar produto"
+                url={`${window.location.origin}${productHref}`}
+                imageUrl={product.images?.[0]}
+              />
               {store?.address && <p className="listing-location">{store.address}{coordinates && store.latitude !== null && store.longitude !== null &&
                 Number.isFinite(Number(store.latitude)) && Number.isFinite(Number(store.longitude)) &&
                 ` · ${distance(coordinates[0], coordinates[1], Number(store.latitude), Number(store.longitude)).toFixed(1)} km`}</p>}
+              {store?.verified && profile && profile.role !== "admin" && store.owner_id !== profile.id && (
+                <button
+                  type="button"
+                  className="button button-dark full-button"
+                  disabled={busy}
+                  onClick={() => {
+                    void onStartStoreConversation(
+                      store.id,
+                      `Tenho interesse no produto ${product.name}.`,
+                      product.id
+                    ).then((conversationId) => {
+                      if (conversationId) void navigate(`/mensagens/lojas/${conversationId}`);
+                    });
+                  }}
+                >
+                  Ir para o chat
+                </button>
+              )}
+              {store && !store.verified && profile && profile.role !== "admin" && store.owner_id !== profile.id && (
+                <button type="button" className="button button-outline full-button" disabled title="O chat fica disponível quando a loja for verificada.">
+                  Chat disponível após verificação
+                </button>
+              )}
+              {store?.verified && !profile && (
+                <Link className="button button-outline full-button" to="/conta">
+                  Inicia sessão para conversar sobre este produto
+                </Link>
+              )}
               {store?.owner_id === profile?.id && (
                 <div className="price-editor">
                   <input 
@@ -144,17 +187,24 @@ export default function Marketplace({
           return (
             <article className="listing-card service-card" key={service.id}>
               <span className="tag tag-green">SERVIÇO · NA PLATAFORMA</span>
-              {service.images?.[0] && <img className="service-listing-image" src={service.images[0]} alt={service.title} />}
-              <h3><Link to={`/prestadores/${service.provider_id}`}>{service.title}</Link></h3>
+              {service.images?.[0] && <Link to={providerServiceHref(service.provider_id, service.id)}><img className="service-listing-image" src={service.images[0]} alt={service.title} /></Link>}
+            <h3><Link to={providerServiceHref(service.provider_id, service.id)}>{service.title}</Link></h3>
               <p>{service.description}</p>
               <div className="listing-foot">
                 <b>{Number(service.price).toLocaleString("pt-MZ")} MT</b>
                 <Link to={`/prestadores/${service.provider_id}`}>{provider?.category.join(", ") || service.category} · Ver prestador</Link>
               </div>
+              <SharePageButton
+                title={service.title}
+                text={`Conhece o serviço ${service.title} em Chimoio Boladas.`}
+                label="Partilhar serviço"
+                url={`${window.location.origin}${providerServiceHref(service.provider_id, service.id)}`}
+                imageUrl={service.images?.[0]}
+              />
               {profile?.role === "client" && (
                 <>
                   <button className="button button-dark full-button" disabled={busy} onClick={() => onStartNegotiation(service.id)}>
-                    Iniciar negociação
+                    Ir para o chat sobre este serviço
                   </button>
                   {provider && <ReviewForm targetType="service_provider" targetId={provider.id} targetName={provider.category.join(", ")} busy={busy} onSubmit={onReview} />}
                 </>
@@ -170,7 +220,7 @@ export default function Marketplace({
                 <span className={`tag ${store.verified ? "tag-verified" : "tag-new-store"}`}>
                   {store.verified ? "Loja verificada ✓" : "Nova loja"} · {cats.join(" · ")}
                 </span>
-                {store.logo_url && <img className="service-listing-image store-listing-logo" src={store.logo_url} alt={`Logótipo de ${store.name}`} />}
+                {store.logo_url && <Link to={`/lojas/${encodeURIComponent(store.slug)}`}><img className="service-listing-image store-listing-logo" src={store.logo_url} alt={`Logótipo de ${store.name}`} /></Link>}
                 <h3><Link to={`/lojas/${store.slug}`}>{store.name}</Link></h3>
                 <p>{store.description}</p>
                 <div className="listing-foot">
@@ -180,6 +230,57 @@ export default function Marketplace({
                     <b>{distance(coordinates[0], coordinates[1], Number(store.latitude), Number(store.longitude)).toFixed(1)} km</b>
                   )}
                 </div>
+                <SharePageButton
+                  title={store.name}
+                  text={`Conhece a loja ${store.name} em Chimoio Boladas.`}
+                  label="Partilhar loja"
+                  url={`${window.location.origin}/lojas/${encodeURIComponent(store.slug)}`}
+                  imageUrl={store.logo_url ?? undefined}
+                />
+                {store.verified && profile && profile.role !== "admin" && store.owner_id !== profile.id && (
+                  <button
+                    type="button"
+                    className="button button-dark full-button"
+                    disabled={busy}
+                    onClick={() => {
+                      void onStartStoreConversation(
+                        store.id,
+                        `Gostaria de obter informações sobre a loja ${store.name}.`
+                      ).then((conversationId) => {
+                        if (conversationId) void navigate(`/mensagens/lojas/${conversationId}`);
+                      });
+                    }}
+                  >
+                    Ir para o chat
+                  </button>
+                )}
+                {!store.verified && profile && profile.role !== "admin" && store.owner_id !== profile.id && (
+                  <button type="button" className="button button-outline full-button" disabled title="O chat fica disponível quando a loja for verificada.">
+                    Chat disponível após verificação
+                  </button>
+                )}
+                {store.verified && profile && profile.role !== "admin" && store.owner_id !== profile.id && (
+                  <button
+                    type="button"
+                    className="button button-dark full-button"
+                    disabled={busy}
+                    onClick={() => {
+                      void onStartStoreConversation(
+                        store.id,
+                        `Gostaria de obter informações sobre a loja ${store.name}.`
+                      ).then((conversationId) => {
+                        if (conversationId) void navigate(`/mensagens/lojas/${conversationId}`);
+                      });
+                    }}
+                  >
+                    Ir para o chat com esta loja
+                  </button>
+                )}
+                {store.verified && !profile && (
+                  <Link className="button button-outline full-button" to="/conta">
+                    Inicia sessão para conversar com a loja
+                  </Link>
+                )}
                 {profile?.role === "client" && store.verified && (
                   <ReviewForm targetType="store" targetId={store.id} targetName={store.name} busy={busy} onSubmit={onReview} />
                 )}

@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
+import { Link } from "react-router-dom";
 import MerchantOverview from "../components/merchant/MerchantOverview";
 import MerchantProductList from "../components/merchant/MerchantProductList";
 import MerchantStoreForm from "../components/merchant/MerchantStoreForm";
@@ -184,6 +185,7 @@ export default function MerchantDashboard({ session, refreshKey, children }: Mer
         <button type="button" className={tab === "overview" ? "is-active" : ""} onClick={() => setTab("overview")}>Visão geral</button>
         <button type="button" className={tab === "store" ? "is-active" : ""} onClick={() => setTab("store")}>Dados da loja</button>
         <button type="button" className={tab === "products" ? "is-active" : ""} onClick={() => setTab("products")}>Produtos</button>
+        <Link className="messages-dashboard-tab" to="/mensagens">Mensagens</Link>
       </nav>
 
       {error && <p className="merchant-feedback is-error" role="alert">{error}</p>}

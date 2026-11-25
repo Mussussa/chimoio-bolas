@@ -12,22 +12,22 @@ import { requestSchemas } from "../validation/schemas.js";
 export const storeConversationsRouter = Router();
 
 storeConversationsRouter.use(authenticate);
-storeConversationsRouter.get("/", requireRole("client", "lojista"), listStoreConversations);
+storeConversationsRouter.get("/", requireRole("client", "lojista", "prestador"), listStoreConversations);
 storeConversationsRouter.post(
   "/",
-  requireRole("client"),
+  requireRole("client", "lojista", "prestador"),
   validateRequest(requestSchemas.createStoreConversation),
   createStoreConversation
 );
 storeConversationsRouter.get(
   "/:id/messages",
-  requireRole("client", "lojista"),
+  requireRole("client", "lojista", "prestador"),
   validateRequest(requestSchemas.storeConversationParams, "params"),
   listStoreMessages
 );
 storeConversationsRouter.post(
   "/:id/messages",
-  requireRole("client", "lojista"),
+  requireRole("client", "lojista", "prestador"),
   validateRequest(requestSchemas.storeConversationParams, "params"),
   validateRequest(requestSchemas.createStoreMessage),
   sendStoreMessage

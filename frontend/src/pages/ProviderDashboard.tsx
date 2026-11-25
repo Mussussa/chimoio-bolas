@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import type { Session } from "@supabase/supabase-js";
 import ProviderOverview from "../components/provider/ProviderOverview";
 import ProviderProfileForm from "../components/provider/ProviderProfileForm";
@@ -179,6 +180,7 @@ export default function ProviderDashboard({ session, refreshCatalog, onProfileCh
         <button type="button" className={tab === "overview" ? "is-active" : ""} onClick={() => setTab("overview")}>Visão geral</button>
         <button type="button" className={tab === "profile" ? "is-active" : ""} onClick={() => setTab("profile")}>Perfil profissional</button>
         <button type="button" className={tab === "services" ? "is-active" : ""} onClick={() => setTab("services")}>Serviços</button>
+        <Link className="messages-dashboard-tab" to="/mensagens">Mensagens</Link>
       </nav>
 
       {error && <p className="provider-feedback is-error" role="alert">{error}</p>}

@@ -27,6 +27,7 @@ export function initializeAssociations(): void {
   Negotiation.hasMany(Message, { foreignKey: "negotiationId", as: "messages" });
   Message.belongsTo(Negotiation, { foreignKey: "negotiationId", as: "negotiation" });
   User.hasMany(Message, { foreignKey: "senderId", as: "messages" });
+  Message.belongsTo(User, { foreignKey: "senderId", as: "sender" });
   User.hasMany(Review, { foreignKey: "clientId", as: "reviews" });
   Review.belongsTo(User, { foreignKey: "clientId", as: "client" });
   Store.hasMany(StoreConversation, { foreignKey: "storeId", as: "conversations" });

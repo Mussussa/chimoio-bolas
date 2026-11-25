@@ -5,8 +5,8 @@ import AdminDashboard from "./AdminDashboard";
 import Account from "../components/auth/Account";
 import ProfileSettingsForm from "../components/auth/ProfileSettingsForm";
 import { Hero, NoticeBanner, SiteFooter, SiteHeader, VisitorGuide } from "../components/layout/SiteChrome";
+import MessagesCenter, { LegacyStoreConversationRedirect } from "../components/messages/MessagesCenter";
 import Marketplace from "../components/marketplace/Marketplace";
-import Negotiations from "../components/negotiations/Negotiations";
 import Workspace from "../components/workspace/Workspace";
 import MerchantDashboard from "./MerchantDashboard";
 import ProviderDashboard from "./ProviderDashboard";
@@ -28,7 +28,6 @@ import {
   ProductsDirectoryPage,
   ProviderDetailPage,
   ServicesDirectoryPage,
-  StoreConversationPage,
   StoreDetailPage,
   StoresDirectoryPage
 } from "./PublicPages";
@@ -155,7 +154,7 @@ export default function MarketplacePage() {
   }
 
   async function startServiceNegotiation(serviceId: string) {
-    if (await startNegotiation(serviceId)) await navigate("/negociacoes");
+    if (await startNegotiation(serviceId)) await navigate("/mensagens?assunto=servicos");
   }
 
   async function startStoreConversation(storeId: string, content: string, productId?: string) {
@@ -206,7 +205,6 @@ export default function MarketplacePage() {
       <SiteHeader
         profile={profile}
         pendingNegotiations={pendingCount}
-        showStoreConversations={profile?.role === "client" || profile?.role === "lojista"}
         onSignOut={() => void auth.signOut()}
       />
       <Routes>
@@ -234,28 +232,77 @@ export default function MarketplacePage() {
               onClearFilters={() => setSearch("")}
               onPriceChange={(productId, value) => setPriceDrafts((current) => ({ ...current, [productId]: value }))}
               onUpdatePrice={(productId) => void updateProductPrice(productId)}
+              onStartStoreConversation={startStoreConversation}
               onStartNegotiation={(serviceId) => void startServiceNegotiation(serviceId)}
               onReview={createReview}
             />
           </>
         } />
-        <Route path="/negociacoes" element={
-          <Negotiations
-            negotiations={negotiations}
-            sessionExists={Boolean(session)}
+        <Route path="/mensagens" element={
+          <MessagesCenter
             profile={profile}
+            session={session}
+            sessionExists={Boolean(session)}
+            negotiations={negotiations}
             busy={busy}
             selectedNegotiation={selectedNegotiation}
             messageForm={messageForm}
+            conversations={storeConversationState.conversations}
+            storeMessages={storeConversationState.messages}
+            storeMessage={storeConversationState.message}
             onSelectField={updateMessageField}
             onSendMessage={sendMessage}
             onRespondToProposal={(negotiationId, messageId, action) => void respondToProposal(negotiationId, messageId, action)}
             onComplete={(negotiationId) => void completeNegotiation(negotiationId)}
+            onStoreMessageChange={storeConversationState.setMessage}
+            onOpenStoreConversation={openStoreConversation}
+            onSendStoreMessage={sendStoreConversationMessage}
           />
         } />
+        <Route path="/mensagens/lojas/:conversationId" element={
+          <MessagesCenter
+            profile={profile}
+            session={session}
+            sessionExists={Boolean(session)}
+            negotiations={negotiations}
+            busy={busy}
+            selectedNegotiation={selectedNegotiation}
+            messageForm={messageForm}
+            conversations={storeConversationState.conversations}
+            storeMessages={storeConversationState.messages}
+            storeMessage={storeConversationState.message}
+            onSelectField={updateMessageField}
+            onSendMessage={sendMessage}
+            onRespondToProposal={(negotiationId, messageId, action) => void respondToProposal(negotiationId, messageId, action)}
+            onComplete={(negotiationId) => void completeNegotiation(negotiationId)}
+            onStoreMessageChange={storeConversationState.setMessage}
+            onOpenStoreConversation={openStoreConversation}
+            onSendStoreMessage={sendStoreConversationMessage}
+          />
+        } />
+        <Route path="/negociacoes" element={<Navigate to="/mensagens?assunto=servicos" replace />} />
         <Route path="/painel" element={renderDashboard()} />
-        <Route path="/produtos" element={<ProductsDirectoryPage products={catalog.products} stores={catalog.stores} query={search} onQueryChange={setSearch} />} />
-        <Route path="/lojas" element={<StoresDirectoryPage stores={catalog.stores} query={search} onQueryChange={setSearch} />} />
+        <Route path="/produtos" element={
+          <ProductsDirectoryPage
+            products={catalog.products}
+            stores={catalog.stores}
+            query={search}
+            onQueryChange={setSearch}
+            profile={profile}
+            busy={busy}
+            onStartStoreConversation={startStoreConversation}
+          />
+        } />
+        <Route path="/lojas" element={
+          <StoresDirectoryPage
+            stores={catalog.stores}
+            query={search}
+            onQueryChange={setSearch}
+            profile={profile}
+            busy={busy}
+            onStartStoreConversation={startStoreConversation}
+          />
+        } />
         <Route path="/lojas/:slug" element={
           <StoreDetailPage
             session={session}
@@ -266,42 +313,27 @@ export default function MarketplacePage() {
           />
         } />
         <Route path="/produtos/:productId" element={<ProductDetailPage />} />
-        <Route path="/servicos" element={<ServicesDirectoryPage providers={catalog.providers} services={catalog.services} query={search} onQueryChange={setSearch} />} />
+        <Route path="/servicos" element={
+          <ServicesDirectoryPage
+            providers={catalog.providers}
+            services={catalog.services}
+            query={search}
+            onQueryChange={setSearch}
+            profile={profile}
+            busy={busy}
+            onStartNegotiation={(serviceId) => void startServiceNegotiation(serviceId)}
+          />
+        } />
         <Route path="/prestadores/:providerId" element={
           <ProviderDetailPage
-            session={session}
             profile={profile}
             busy={busy}
             onReview={createReview}
             onStartNegotiation={(serviceId) => void startServiceNegotiation(serviceId)}
           />
         } />
-        <Route path="/conversas" element={
-          <StoreConversationPage
-            session={session}
-            profile={profile}
-            conversations={storeConversationState.conversations}
-            messages={storeConversationState.messages}
-            message={storeConversationState.message}
-            busy={busy}
-            onMessageChange={storeConversationState.setMessage}
-            onOpen={openStoreConversation}
-            onSend={sendStoreConversationMessage}
-          />
-        } />
-        <Route path="/conversas/:conversationId" element={
-          <StoreConversationPage
-            session={session}
-            profile={profile}
-            conversations={storeConversationState.conversations}
-            messages={storeConversationState.messages}
-            message={storeConversationState.message}
-            busy={busy}
-            onMessageChange={storeConversationState.setMessage}
-            onOpen={openStoreConversation}
-            onSend={sendStoreConversationMessage}
-          />
-        } />
+        <Route path="/conversas" element={<Navigate to="/mensagens?assunto=lojas" replace />} />
+        <Route path="/conversas/:conversationId" element={<LegacyStoreConversationRedirect />} />
         <Route path="/conta" element={
           session && profile
             ? <ProfileSettingsForm profile={profile} saving={auth.profileSaving} onSave={updateAccountProfile} />

@@ -5,11 +5,10 @@ import type { Notice, Profile } from "../../lib/types";
 type HeaderProps = Readonly<{
   profile: Profile | null;
   pendingNegotiations: number;
-  showStoreConversations: boolean;
   onSignOut: () => void;
 }>;
 
-export function SiteHeader({ profile, pendingNegotiations, showStoreConversations, onSignOut }: HeaderProps) {
+export function SiteHeader({ profile, pendingNegotiations, onSignOut }: HeaderProps) {
   const dashboardLabels: Record<Profile["role"], string> = {
     client: "Abrir negócio",
     lojista: "Minha Loja",
@@ -21,8 +20,7 @@ export function SiteHeader({ profile, pendingNegotiations, showStoreConversation
       <Link className="brand" to="/"><span className="brand-icon">CB</span><span>Chimoio <b>Boladas</b><small>NEGÓCIOS LOCAIS</small></span></Link>
       <nav aria-label="Navegação principal">
         <Link to="/">Explorar</Link>
-        {profile && <Link to="/negociacoes">Negociações{pendingNegotiations > 0 && <span className="nav-badge" aria-label={`${pendingNegotiations} pendentes`}>{pendingNegotiations}</span>}</Link>}
-        {showStoreConversations && <Link to="/conversas">Conversas</Link>}
+        {profile && profile.role !== "admin" && <Link to="/mensagens">Mensagens{pendingNegotiations > 0 && <span className="nav-badge" aria-label={`${pendingNegotiations} pendentes`}>{pendingNegotiations}</span>}</Link>}
         {profile && <Link to="/painel">{dashboardLabels[profile.role]}</Link>}
       </nav>
       <div className="account">
