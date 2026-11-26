@@ -1,4 +1,5 @@
 import type { MerchantProduct, MerchantStore } from "../../lib/api";
+import { FiEdit2, FiPackage } from "react-icons/fi";
 import { formatMerchantMoney } from "./merchantTypes";
 import CategoryImage from "../marketplace/CategoryImage";
 import { FALLBACK_IMAGE, STORE_CATEGORY_IMAGES } from "../../lib/categoryPlaceholders";
@@ -22,7 +23,7 @@ export default function MerchantOverview({ store, products, onEditStore, onManag
         <section className="min-w-0 rounded-lg border border-[var(--line)] bg-white p-[17px]">
           <div className="mb-4 flex items-center justify-between gap-[14px]">
             <h2 className="m-0 font-[Manrope,sans-serif] text-lg font-bold text-[var(--navy)]">Perfil da loja</h2>
-            <button type="button" className="border-0 bg-transparent font-bold text-[var(--blue)]" onClick={onEditStore}>Editar dados</button>
+            <button type="button" className="inline-flex items-center gap-1.5 border-0 bg-transparent font-bold text-[var(--blue)]" onClick={onEditStore}><FiEdit2 aria-hidden="true" />Editar dados</button>
           </div>
           <CategoryImage className="mb-3 h-[82px] w-[82px] flex-none rounded-lg border border-[var(--line)] bg-[#f5f8f9] object-cover" src={store.logoUrl} placeholder={STORE_CATEGORY_IMAGES[store.category[0]] ?? FALLBACK_IMAGE} alt={`Logótipo de ${store.name}`} />
           <p className="mt-[7px] text-xs leading-[1.6] text-[var(--muted)]">{store.description || "Adicione uma descrição para apresentar melhor a sua loja."}</p>
@@ -35,7 +36,7 @@ export default function MerchantOverview({ store, products, onEditStore, onManag
         <section className="min-w-0 rounded-lg border border-[var(--line)] bg-white p-[17px]">
           <div className="mb-4 flex items-center justify-between gap-[14px]">
             <h2 className="m-0 font-[Manrope,sans-serif] text-lg font-bold text-[var(--navy)]">Produtos recentes</h2>
-            <button type="button" className="border-0 bg-transparent font-bold text-[var(--blue)]" onClick={onManageProducts}>Gerir produtos</button>
+            <button type="button" className="inline-flex items-center gap-1.5 border-0 bg-transparent font-bold text-[var(--blue)]" onClick={onManageProducts}><FiPackage aria-hidden="true" />Gerir produtos</button>
           </div>
           {products.length === 0 ? <p>Ainda não há produtos cadastrados.</p> : products.slice(0, 4).map((product) => (
             <div className="flex justify-between gap-3 border-b border-[#edf1f3] py-3 text-xs text-[var(--navy)]" key={product.id}>

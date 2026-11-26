@@ -1,11 +1,11 @@
 import { useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FiUser } from "react-icons/fi";
+import { FiEdit2, FiLogIn, FiMessageCircle, FiUser } from "react-icons/fi";
 import type { MapStore, Product, Profile, ProviderReview, Service, ServiceProvider, Store } from "../../lib/types";
-import type { ReviewPayload } from "../../lib/api";
+import type { PublicReview, ReviewSubmission } from "../../lib/api";
 import { providerServiceHref, storeProductHref } from "../../lib/publicLinks";
 import { distanceInKm, sortByDistance, type MapCenter } from "../../lib/mapStores";
-import MapExplorer from "./MapExplorer";
+import MapExplorer from "./LazyMapExplorer";
 import ReviewForm from "./ReviewForm";
 import { CatalogNavigation, LocationPreference } from "./DirectoryControls";
 import SharePageButton from "./SharePageButton";
@@ -37,7 +37,7 @@ type MarketplaceProps = Readonly<{
   onUpdatePrice: (productId: string) => void;
   onStartStoreConversation: (storeId: string, content: string, productId?: string) => Promise<string | null>;
   onStartNegotiation: (serviceId: string) => void;
-  onReview: (review: ReviewPayload) => Promise<boolean>;
+  onReview: (review: ReviewSubmission) => Promise<PublicReview | null>;
 }>;
 
 function parseCategories(category: unknown): string[] {
@@ -200,7 +200,7 @@ export default function Marketplace({
           </div>
         </div>
         {listedProviders.length ? (
-          <div className="grid grid-cols-1 gap-[15px] min-[851px]:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 min-[561px]:gap-[15px] min-[851px]:grid-cols-3">
             {listedProviders.map(({ provider, services: providerServices, reviews }) => {
               const categories = parseCategories(provider.category);
               const providerNeighborhood = CHIMOIO_NEIGHBORHOODS.find(
@@ -215,7 +215,7 @@ export default function Marketplace({
                 ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length
                 : null;
               return (
-                <article className="min-h-[206px] rounded-xl border border-[var(--line)] border-t-[3px] border-t-[var(--yellow)] bg-white p-[22px] shadow-[0_8px_18px_#16354a08]" key={provider.id}>
+                <article className="min-h-[206px] rounded-xl border border-[var(--line)] border-t-[3px] border-t-[var(--yellow)] bg-white p-3 shadow-[0_8px_18px_#16354a08] min-[561px]:p-[22px]" key={provider.id}>
                   <header className="flex items-start justify-between gap-3 max-[560px]:flex-col">
                     <div>
                       <span className="inline-flex rounded-[5px] bg-[#e9f4ef] px-2 py-1.5 text-[9px] font-extrabold tracking-[.08em] text-[#2b745e]">
@@ -234,19 +234,6 @@ export default function Marketplace({
                   <p className="my-[5px] mb-3 text-sm font-extrabold text-[#9a7200]" aria-label={average === null ? "Ainda sem avaliações" : `Classificação ${average.toFixed(1)} em 5`}>
                     {average === null ? "Ainda sem avaliações" : <>★ {average.toFixed(1)} <span className="text-[11px] font-semibold text-[var(--muted)]">({reviews.length} {reviews.length === 1 ? "avaliação" : "avaliações"})</span></>}
                   </p>
-                  {reviews.slice(0, 2).map((review, index) => (
-                    review.comment.trim() && (
-                      <figure className="my-2 flex items-start gap-2.5 rounded-r-md border-l-[3px] border-[var(--yellow)] bg-[var(--yellow-soft)] px-3 py-[9px]" key={`${review.target_id}-${review.created_at}-${index}`}>
-                        {review.reviewer_avatar_url
-                          ? <img className="h-8 w-8 flex-none rounded-full bg-white object-cover" src={review.reviewer_avatar_url} alt="" />
-                          : <span className="grid h-8 w-8 flex-none place-items-center rounded-full bg-white text-[var(--blue)]" aria-hidden="true"><FiUser /></span>}
-                        <figcaption className="min-w-0 text-xs leading-[1.5] text-[#605d50]">
-                          {review.reviewer_name && <b className="mb-0.5 block text-[11px] text-[var(--navy)]">{review.reviewer_name}</b>}
-                          “{review.comment}”
-                        </figcaption>
-                      </figure>
-                    )
-                  ))}
                   {profile?.role === "client" && (
                     <ReviewForm
                       targetType="service_provider"
@@ -258,7 +245,7 @@ export default function Marketplace({
                   )}
                   <div className="mt-4 grid gap-3">
                     {providerServices.map((service) => (
-                      <article className="border-t border-[var(--line)] pt-[14px]">
+                      <article className="border-t border-[var(--line)] pt-[14px]" key={service.id}>
                         <Link to={providerServiceHref(provider.id, service.id)}>
                           <CategoryImage className="my-3 block aspect-video w-full rounded-md bg-[#eef2f4] object-cover" src={service.images?.[0]} placeholder={SERVICE_CATEGORY_IMAGES[service.category] ?? FALLBACK_IMAGE} alt={service.title} />
                         </Link>
@@ -281,12 +268,28 @@ export default function Marketplace({
                             disabled={busy}
                             onClick={() => onStartNegotiation(service.id)}
                           >
-                            Falar com este prestador
+                            <FiMessageCircle aria-hidden="true" />Falar com este prestador
                           </button>
                         )}
                       </article>
                     ))}
                   </div>
+                  {reviews.filter((review) => review.comment.trim()).slice(0, 2).map((review, index) => (
+                    <figure className="my-2 flex items-start gap-2.5 rounded-r-md border-l-[3px] border-[var(--yellow)] bg-[var(--yellow-soft)] px-3 py-[9px]" key={`${review.target_id}-${review.created_at}-${index}`}>
+                      {review.reviewer_avatar_url
+                        ? <img className="h-8 w-8 flex-none rounded-full bg-white object-cover" src={review.reviewer_avatar_url} alt="" />
+                        : <span className="grid h-8 w-8 flex-none place-items-center rounded-full bg-white text-[var(--blue)]" aria-hidden="true"><FiUser /></span>}
+                      <figcaption className="min-w-0 flex-1 text-xs leading-[1.5] text-[#605d50]">
+                        {review.reviewer_name && <b className="mb-0.5 block text-[11px] text-[var(--navy)]">{review.reviewer_name}</b>}
+                        <span className="line-clamp-3">“{review.comment.trim()}”</span>
+                        {review.image_url && (
+                          <a className="mt-2 block w-fit rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--blue)]" href={review.image_url} target="_blank" rel="noreferrer" aria-label="Abrir fotografia da avaliação num novo separador">
+                            <img className="max-h-28 max-w-full rounded border border-[var(--line)] object-contain" src={review.image_url} alt="Fotografia do produto ou serviço avaliado" loading="lazy" />
+                          </a>
+                        )}
+                      </figcaption>
+                    </figure>
+                  ))}
                 </article>
               );
             })}
@@ -366,12 +369,12 @@ export default function Marketplace({
                         });
                       }}
                     >
-                      Falar com a loja
+                      <FiMessageCircle aria-hidden="true" />Falar com a loja
                     </button>
                   )}
                   {!profile && (
                     <Link className="mt-[15px] inline-flex min-h-[42px] w-full items-center justify-center gap-[9px] rounded-lg border border-[#c8d6dd] bg-white px-[17px] text-xs font-bold text-[var(--navy)]" to="/conta">
-                      Inicia sessão para conversar com a loja
+                      <FiLogIn aria-hidden="true" />Inicia sessão para conversar sobre este produto
                     </Link>
                   )}
                   {profile?.role === "client" && (
@@ -402,7 +405,7 @@ export default function Marketplace({
           </div>
         </div>
         {matchingProducts.length ? (
-          <div className="grid grid-cols-1 gap-[15px] min-[851px]:grid-cols-3">
+          <div className="grid grid-cols-2 gap-3 min-[561px]:gap-[15px] min-[851px]:grid-cols-3">
             {matchingProducts.map((product) => {
               const store = stores.find((item) => item.id === product.store_id);
               const productHref = store
@@ -412,7 +415,7 @@ export default function Marketplace({
                 ? getDistanceLabel(locationCenter, store.latitude, store.longitude)
                 : null;
               return (
-                <article className="min-h-[206px] rounded-xl border border-[var(--line)] bg-white p-[22px] shadow-[0_8px_18px_#16354a08]" key={product.id}>
+                <article className="min-h-[206px] rounded-xl border border-[var(--line)] bg-white p-3 shadow-[0_8px_18px_#16354a08] min-[561px]:p-[22px]" key={product.id}>
                   <span className="inline-flex rounded-[5px] bg-[var(--yellow-soft)] px-2 py-1.5 text-[9px] font-extrabold tracking-[.08em] text-[#765900]">PRODUTO · {product.category}</span>
                   <Link to={productHref}>
                     <CategoryImage className="my-3 block aspect-video w-full rounded-md bg-[#eef2f4] object-cover" src={product.images?.[0]} placeholder={STORE_CATEGORY_IMAGES[product.category] ?? FALLBACK_IMAGE} alt={product.name} />
@@ -452,12 +455,12 @@ export default function Marketplace({
                         });
                       }}
                     >
-                      Falar com a loja
+                      <FiMessageCircle aria-hidden="true" />Falar com a loja
                     </button>
                   )}
                   {store && !profile && (
                     <Link className="mt-[15px] inline-flex min-h-[42px] w-full items-center justify-center gap-[9px] rounded-lg border border-[#c8d6dd] bg-white px-[17px] text-xs font-bold text-[var(--navy)]" to="/conta">
-                      Inicia sessão para conversar sobre este produto
+                      <FiLogIn aria-hidden="true" />Inicia sessão para conversar com a loja
                     </Link>
                   )}
                   {store?.owner_id === profile?.id && (
@@ -470,7 +473,7 @@ export default function Marketplace({
                         onChange={(event) => onPriceChange(product.id, event.target.value)}
                         aria-label={`Novo preço de ${product.name}`}
                       />
-                      <button className="inline-flex min-h-[42px] items-center justify-center gap-[9px] rounded-lg border border-[#c8d6dd] bg-white px-[17px] text-xs font-bold text-[var(--navy)]" onClick={() => onUpdatePrice(product.id)}>Alterar preço</button>
+                      <button className="inline-flex min-h-[42px] items-center justify-center gap-[9px] rounded-lg border border-[#c8d6dd] bg-white px-[17px] text-xs font-bold text-[var(--navy)]" onClick={() => onUpdatePrice(product.id)}><FiEdit2 aria-hidden="true" />Alterar preço</button>
                     </div>
                   )}
                 </article>

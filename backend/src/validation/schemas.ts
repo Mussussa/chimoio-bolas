@@ -124,7 +124,8 @@ createProduct: Joi.object({
     targetType: Joi.string().valid("store", "service_provider").required().label("O tipo de destino"),
     targetId: uuid("O destino da avaliação"),
     rating: Joi.number().integer().min(1).max(5).required().label("A classificação"),
-    comment: Joi.string().max(1000).allow("").default("").label("O comentário")
+    comment: Joi.string().max(1000).allow("").default("").label("O comentário"),
+    imageUrl: Joi.string().uri().max(2000).allow(null, "").optional().label("A fotografia da avaliação")
   }),
   createNegotiation: Joi.object({
     serviceId: uuid("O serviço")

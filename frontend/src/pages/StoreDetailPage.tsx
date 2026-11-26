@@ -1,10 +1,11 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { FiArrowLeft, FiMessageCircle } from "react-icons/fi";
 import type { Session } from "@supabase/supabase-js";
-import { loadPublicStore, type MerchantProduct, type PublicStoreDetail, type ReviewPayload } from "../lib/api";
+import { loadPublicStore, type MerchantProduct, type PublicReview, type PublicStoreDetail, type ReviewSubmission } from "../lib/api";
 import { storeProductHref } from "../lib/publicLinks";
 import type { Profile } from "../lib/types";
-import MapExplorer from "../components/marketplace/MapExplorer";
+import MapExplorer from "../components/marketplace/LazyMapExplorer";
 import ReviewForm from "../components/marketplace/ReviewForm";
 import ReviewSection from "../components/marketplace/ReviewSection";
 import SharePageButton from "../components/marketplace/SharePageButton";
@@ -15,7 +16,7 @@ type StoreDetailPageProps = Readonly<{
   session: Session | null;
   profile: Profile | null;
   busy: boolean;
-  onReview: (review: ReviewPayload) => Promise<boolean>;
+  onReview: (review: ReviewSubmission) => Promise<PublicReview | null>;
   onStartStoreConversation: (storeId: string, content: string, productId?: string) => Promise<string | null>;
 }>;
 
@@ -27,6 +28,11 @@ export default function StoreDetailPage({ session, profile, busy, onReview, onSt
   const [error, setError] = useState<string | null>(null);
   const [selectedProductId, setSelectedProductId] = useState("");
   const [inquiryTopic, setInquiryTopic] = useState("");
+  const submitReview = useCallback(async (review: ReviewSubmission) => {
+    const saved = await onReview(review);
+    if (saved) setDetail((current) => current ? { ...current, reviews: [saved, ...current.reviews] } : current);
+    return saved;
+  }, [onReview]);
   const linkedProductId = location.hash.startsWith("#produto-")
     ? location.hash.slice("#produto-".length)
     : "";
@@ -95,7 +101,7 @@ export default function StoreDetailPage({ session, profile, busy, onReview, onSt
 
   return (
     <article className="min-h-[65vh] px-[clamp(20px,7vw,100px)] py-[70px] max-[560px]:py-12">
-      <Link to="/" className="mb-5 inline-block text-[13px] font-bold text-[#765900]">← Voltar a explorar</Link>
+      <Link to="/" className="mb-5 inline-flex items-center gap-1.5 text-[13px] font-bold text-[#765900]"><FiArrowLeft aria-hidden="true" />Voltar a explorar</Link>
       <header className="my-2 flex flex-col items-start gap-[22px] min-[561px]:flex-row min-[561px]:items-center">
         <CategoryImage className="h-[100px] w-[100px] rounded-[14px] bg-[#eaf1f4] object-cover" src={store.logoUrl} placeholder={STORE_CATEGORY_IMAGES[store.category[0]] ?? FALLBACK_IMAGE} alt={`Logótipo de ${store.name}`} />
         <div>
@@ -150,7 +156,7 @@ export default function StoreDetailPage({ session, profile, busy, onReview, onSt
               </select>
             </>
           )}
-          <button type="submit" className="inline-flex min-h-[42px] items-center justify-self-start justify-center gap-[9px] rounded-lg border-0 bg-[#302b18] px-[17px] text-[12px] font-bold text-white transition-[transform,background-color] duration-[160ms] hover:-translate-y-px hover:bg-[#ffd21a] hover:text-[#302b18] disabled:cursor-wait disabled:opacity-[.56]" disabled={busy}>Iniciar conversa</button>
+          <button type="submit" className="inline-flex min-h-[42px] items-center justify-self-start justify-center gap-[9px] rounded-lg border-0 bg-[#302b18] px-[17px] text-[12px] font-bold text-white transition-[transform,background-color] duration-[160ms] hover:-translate-y-px hover:bg-[#ffd21a] hover:text-[#302b18] disabled:cursor-wait disabled:opacity-[.56]" disabled={busy}><FiMessageCircle aria-hidden="true" />Iniciar conversa</button>
         </form>
       )}
       {!session && (
@@ -205,7 +211,7 @@ export default function StoreDetailPage({ session, profile, busy, onReview, onSt
         ) : <p className="col-span-full rounded-[10px] border border-dashed border-[#cbd8de] p-6 text-center text-[13px] text-[#716e60]">Esta loja ainda não publicou produtos.</p>}
       </section>
       <ReviewSection reviews={reviews} />
-      {profile?.role === "client" && <ReviewForm targetType="store" targetId={store.id} targetName={store.name} busy={busy} onSubmit={onReview} />}
+      {profile?.role === "client" && <ReviewForm targetType="store" targetId={store.id} targetName={store.name} busy={busy} onSubmit={submitReview} />}
     </article>
   );
 }

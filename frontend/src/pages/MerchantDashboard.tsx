@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { Link } from "react-router-dom";
+import { FiAlertCircle, FiCheckCircle, FiGrid, FiMessageCircle, FiPackage, FiShoppingBag } from "react-icons/fi";
 import CategoryImage from "../components/marketplace/CategoryImage";
 import { FALLBACK_IMAGE, STORE_CATEGORY_IMAGES } from "../lib/categoryPlaceholders";
 import MerchantOverview from "../components/merchant/MerchantOverview";
@@ -93,6 +94,16 @@ export default function MerchantDashboard({ session, refreshKey, children }: Mer
     setUploadingLogo(true);
     setError(null);
     try {
+      const { data: { session: storageSession }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+      if (storageSession?.user.id !== session.user.id || storageSession.access_token !== session.access_token) {
+        const { error: syncError } = await supabase.auth.setSession({
+          access_token: session.access_token,
+          refresh_token: session.refresh_token
+        });
+        if (syncError) throw syncError;
+      }
+
       const storeNameSlug = storeDraft?.name
         ? storeDraft.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
         : "loja";
@@ -102,8 +113,12 @@ export default function MerchantDashboard({ session, refreshKey, children }: Mer
       const { error: uploadError } = await supabase.storage
         .from("store-logos")
         .upload(filePath, file, { cacheControl: "3600", contentType: file.type, upsert: false });
-      
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        if (uploadError.message.toLowerCase().includes("row-level security")) {
+          throw new Error("O Supabase está a bloquear o envio do logótipo. Aplica a migração 20261126130000_repair_store_logo_storage_policies.sql no projeto Supabase e tenta novamente.");
+        }
+        throw uploadError;
+      }
 
       const { data } = supabase.storage.from("store-logos").getPublicUrl(filePath);
       setMessage("Logótipo carregado. Guarda as alterações para o associar à loja.");
@@ -179,20 +194,20 @@ export default function MerchantDashboard({ session, refreshKey, children }: Mer
         </div>
         {store && <CategoryImage className="h-[82px] w-[82px] shrink-0 rounded-lg border border-[#e7e1ca] bg-[#f5f8f9] object-cover" src={store.logoUrl} placeholder={STORE_CATEGORY_IMAGES[store.category[0]] ?? FALLBACK_IMAGE} alt={`Logótipo de ${store.name}`} />}
         <span className={`rounded-md px-[11px] py-2 text-[11px] font-bold ${store?.verified ? "bg-[#e6f4ec] text-[#267155]" : "bg-[#fff3da] text-[#885a1c]"}`}>
-          {store?.verified ? "Loja verificada" : "Loja não verificada"}
+          <span className="inline-flex items-center gap-1.5">{store?.verified ? <FiCheckCircle aria-hidden="true" /> : <FiShoppingBag aria-hidden="true" />}{store?.verified ? "Loja verificada" : "Loja não verificada"}</span>
         </span>
       </header>
 
       <nav className="my-5 mb-6 flex gap-6 overflow-x-auto border-b border-[#e7e1ca] max-[560px]:gap-[15px]" aria-label="Secções do painel">
-        <button type="button" className={`shrink-0 border-0 border-b-2 border-transparent bg-transparent px-0.5 pb-3 text-[13px] font-bold max-[560px]:text-xs ${tab === "overview" ? "border-b-[#765900] text-[#765900]" : "text-[#716e60]"}`} onClick={() => setTab("overview")}>Visão geral</button>
-        <button type="button" className={`shrink-0 border-0 border-b-2 border-transparent bg-transparent px-0.5 pb-3 text-[13px] font-bold max-[560px]:text-xs ${tab === "store" ? "border-b-[#765900] text-[#765900]" : "text-[#716e60]"}`} onClick={() => setTab("store")}>Dados da loja</button>
-        <button type="button" className={`shrink-0 border-0 border-b-2 border-transparent bg-transparent px-0.5 pb-3 text-[13px] font-bold max-[560px]:text-xs ${tab === "products" ? "border-b-[#765900] text-[#765900]" : "text-[#716e60]"}`} onClick={() => setTab("products")}>Produtos</button>
-        <Link className="ml-auto shrink-0 border-b-2 border-transparent px-0.5 pb-3 text-[13px] font-bold text-[#765900] hover:border-b-[#9abbd0] max-[560px]:text-xs" to="/mensagens">Mensagens</Link>
+        <button type="button" aria-pressed={tab === "overview"} className={`inline-flex shrink-0 items-center gap-1.5 border-0 border-b-2 border-transparent bg-transparent px-0.5 pb-3 text-[13px] font-bold max-[560px]:text-xs ${tab === "overview" ? "border-b-[#765900] text-[#765900]" : "text-[#716e60]"}`} onClick={() => setTab("overview")}><FiGrid aria-hidden="true" />Visão geral</button>
+        <button type="button" aria-pressed={tab === "store"} className={`inline-flex shrink-0 items-center gap-1.5 border-0 border-b-2 border-transparent bg-transparent px-0.5 pb-3 text-[13px] font-bold max-[560px]:text-xs ${tab === "store" ? "border-b-[#765900] text-[#765900]" : "text-[#716e60]"}`} onClick={() => setTab("store")}><FiShoppingBag aria-hidden="true" />Dados da loja</button>
+        <button type="button" aria-pressed={tab === "products"} className={`inline-flex shrink-0 items-center gap-1.5 border-0 border-b-2 border-transparent bg-transparent px-0.5 pb-3 text-[13px] font-bold max-[560px]:text-xs ${tab === "products" ? "border-b-[#765900] text-[#765900]" : "text-[#716e60]"}`} onClick={() => setTab("products")}><FiPackage aria-hidden="true" />Produtos</button>
+        <Link className="ml-auto inline-flex shrink-0 items-center gap-1.5 border-b-2 border-transparent px-0.5 pb-3 text-[13px] font-bold text-[#765900] hover:border-b-[#9abbd0] max-[560px]:text-xs" to="/mensagens"><FiMessageCircle aria-hidden="true" />Mensagens</Link>
       </nav>
 
-      {error && <p className="my-[14px] block rounded-md bg-[#fff0ec] px-[14px] py-3 text-[13px] text-[#9e3b2e]" role="alert">{error}</p>}
-      {message && <output className="my-[14px] block rounded-md bg-[#eaf5ef] px-[14px] py-3 text-[13px] text-[#267155]">{message}</output>}
-      {loading && <output className="my-[14px] block rounded-md bg-[#eaf5ef] px-[14px] py-3 text-[13px] text-[#267155]">A carregar os dados da loja...</output>}
+      {error && <p className="my-[14px] flex items-start gap-2 rounded-md bg-[#fff0ec] px-[14px] py-3 text-[13px] text-[#9e3b2e]" role="alert"><FiAlertCircle className="mt-0.5 flex-none" aria-hidden="true" />{error}</p>}
+      {message && <output className="my-[14px] flex items-center gap-2 rounded-md bg-[#eaf5ef] px-[14px] py-3 text-[13px] text-[#267155]"><FiCheckCircle aria-hidden="true" />{message}</output>}
+      {loading && <output className="my-[14px] flex items-center gap-2 rounded-md bg-[#eaf5ef] px-[14px] py-3 text-[13px] text-[#267155]" aria-live="polite"><FiShoppingBag aria-hidden="true" />A carregar os dados da loja...</output>}
 
       {!loading && store && tab === "overview" && (
         <MerchantOverview

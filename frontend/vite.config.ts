@@ -16,3 +16,6 @@ export default defineConfig(({ mode }) => {
     plugins: [tailwindcss(), react()]
   };
 });
+
+
+///home/ismael/boladas/frontend/vite.config.ts

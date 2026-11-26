@@ -1,5 +1,5 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
-import { FiUser } from "react-icons/fi";
+import { FiSave, FiTrash2, FiUser } from "react-icons/fi";
 import type { Profile, ProfileUpdate } from "../../lib/types";
 import { CHIMOIO_NEIGHBORHOODS } from "../../lib/chimoioNeighborhoods";
 
@@ -110,7 +110,7 @@ export default function ProfileSettingsForm({ profile, saving, onSave }: Profile
           </label>
           {(avatarUrl || avatarFile) && (
             <button type="button" className="justify-self-start border-0 bg-transparent text-xs font-bold text-[var(--blue)]" onClick={() => { setAvatarUrl(null); setAvatarFile(null); setAvatarFailed(false); }}>
-              Remover fotografia
+              <span className="inline-flex items-center gap-1.5"><FiTrash2 aria-hidden="true" />Remover fotografia</span>
             </button>
           )}
         </div>
@@ -143,7 +143,7 @@ export default function ProfileSettingsForm({ profile, saving, onSave }: Profile
         </label>
         {formError && <p className="col-span-full m-0 rounded-md bg-[#fff0ec] px-[14px] py-3 text-[13px] text-[#9e3b2e]" role="alert">{formError}</p>}
         <button className="inline-flex min-h-[42px] items-center justify-center gap-[9px] justify-self-start rounded-lg bg-[var(--navy)] px-[17px] text-xs font-bold text-white disabled:cursor-wait disabled:opacity-[.56]" type="submit" disabled={saving}>
-          {saving ? "A guardar..." : "Guardar dados pessoais"}
+          <FiSave aria-hidden="true" />{saving ? "A guardar..." : "Guardar dados pessoais"}
         </button>
       </form>
     </section>

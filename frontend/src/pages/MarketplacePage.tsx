@@ -1,17 +1,9 @@
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState, type FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
-import AdminDashboard from "./AdminDashboard";
-import Account from "../components/auth/Account";
-import ProfileSettingsForm from "../components/auth/ProfileSettingsForm";
 import { Hero, NoticeBanner, SiteFooter, SiteHeader, VisitorGuide } from "../components/layout/SiteChrome";
-import MessagesCenter, { LegacyStoreConversationRedirect } from "../components/messages/MessagesCenter";
 import Marketplace from "../components/marketplace/Marketplace";
 import ContactSafetyDialog from "../components/marketplace/ContactSafetyDialog";
-import Workspace from "../components/workspace/Workspace";
-import MerchantDashboard from "./MerchantDashboard";
-import ProviderDashboard from "./ProviderDashboard";
-import InformationPage from "./InformationPage";
 import {
   createProduct as createProductRequest,
   createReview as createReviewRequest,
@@ -20,19 +12,44 @@ import {
   updateProductPrice as updateProductPriceRequest,
   verifyStore as verifyStoreRequest
 } from "../lib/api";
+import type { PublicReview, ReviewSubmission } from "../lib/api";
 import type { Notice, ProductForm, ProfileUpdate, ProviderForm, StoreForm } from "../lib/types";
 import useAuth from "../hooks/useAuth";
 import useCatalog from "../hooks/useCatalog";
 import useNegotiations from "../hooks/useNegotiations";
 import useStoreConversations from "../hooks/useStoreConversations";
-import {
-  ProductDetailPage,
-  ProductsDirectoryPage,
-  ProviderDetailPage,
-  ServicesDirectoryPage,
-  StoreDetailPage,
-  StoresDirectoryPage
-} from "./PublicPages";
+
+const AdminDashboard = lazy(() => import("./AdminDashboard"));
+const Account = lazy(() => import("../components/auth/Account"));
+const ProfileSettingsForm = lazy(() => import("../components/auth/ProfileSettingsForm"));
+const MessagesCenter = lazy(() => import("../components/messages/MessagesCenter"));
+const LegacyStoreConversationRedirect = lazy(() =>
+  import("../components/messages/MessagesCenter").then(({ LegacyStoreConversationRedirect: component }) => ({ default: component }))
+);
+const Workspace = lazy(() => import("../components/workspace/Workspace"));
+const MerchantDashboard = lazy(() => import("./MerchantDashboard"));
+const ProviderDashboard = lazy(() => import("./ProviderDashboard"));
+const InformationPage = lazy(() => import("./InformationPage"));
+const ProductDetailPage = lazy(() => import("./ProductDetailPage"));
+const ProviderDetailPage = lazy(() => import("./ProviderDetailPage"));
+const StoreDetailPage = lazy(() => import("./StoreDetailPage"));
+const ProductsDirectoryPage = lazy(() =>
+  import("./DirectoryPages").then(({ ProductsDirectoryPage: component }) => ({ default: component }))
+);
+const ServicesDirectoryPage = lazy(() =>
+  import("./DirectoryPages").then(({ ServicesDirectoryPage: component }) => ({ default: component }))
+);
+const StoresDirectoryPage = lazy(() =>
+  import("./DirectoryPages").then(({ StoresDirectoryPage: component }) => ({ default: component }))
+);
+
+function RouteLoadingFallback() {
+  return (
+    <section className="grid min-h-[50vh] place-items-center px-5 py-12 text-sm text-[var(--muted)]" role="status" aria-live="polite">
+      A carregar página…
+    </section>
+  );
+}
 
 type StoreRegistration = StoreForm & { neighborhood?: string };
 type ContactSafetyPrompt = Readonly<{
@@ -73,7 +90,7 @@ export default function MarketplacePage() {
     void loadCatalog();
   }, [loadCatalog]);
 
-  async function runApi<T>(request: (currentSession: Session) => Promise<T>): Promise<T | null> {
+  const runApi = useCallback(async <T,>(request: (currentSession: Session) => Promise<T>): Promise<T | null> => {
     if (!session) {
       setNotice({ text: "Inicia sessão para continuar.", error: true });
       return null;
@@ -90,7 +107,7 @@ export default function MarketplacePage() {
     } finally {
       setBusy(false);
     }
-  }
+  }, [session, setNotice, setBusy]);
 
   async function registerProvider(event: FormEvent<HTMLFormElement>, providerForm: ProviderForm): Promise<boolean> {
     event.preventDefault();
@@ -147,10 +164,12 @@ export default function MarketplacePage() {
     if (result) await loadCatalog();
   }
 
-  async function createReview(review: Parameters<typeof createReviewRequest>[1]): Promise<boolean> {
+  const createReview = useCallback(async (review: ReviewSubmission): Promise<PublicReview | null> => {
     const result = await runApi((currentSession) => createReviewRequest(currentSession, review));
-    return Boolean(result);
-  }
+    if (!result) return null;
+    await loadCatalog();
+    return result.review;
+  }, [loadCatalog, runApi]);
 
   async function verifyStore(storeId: string) {
     const result = await runApi((currentSession) => verifyStoreRequest(currentSession, storeId));
@@ -234,6 +253,7 @@ export default function MarketplacePage() {
           onCancel={contactSafetyPrompt.onCancel}
         />
       )}
+      <Suspense fallback={<RouteLoadingFallback />}>
       <Routes>
         <Route path="/" element={
           <>
@@ -398,6 +418,7 @@ export default function MarketplacePage() {
         } />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </Suspense>
       <SiteFooter />
     </main>
   );

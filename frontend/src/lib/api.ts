@@ -92,12 +92,44 @@ export function updateProfile(session: Session, body: ProfileUpdate) {
   );
 }
 
-export function createReview(session: Session, body: ReviewPayload) {
-  return api<{ review: { id: string; targetType: ReviewPayload["targetType"]; targetId: string; rating: number; comment: string } }>(
-    "/reviews",
-    session,
-    { method: "POST", body }
-  );
+export async function createReview(session: Session, submission: ReviewSubmission) {
+  const { image, ...body } = submission;
+  let imageUrl: string | null = null;
+  let imagePath: string | null = null;
+  if (image) {
+    if (!supabase) throw new Error("O serviço de fotografias está temporariamente indisponível.");
+    const extensionByType: Record<string, string> = {
+      "image/jpeg": "jpg",
+      "image/png": "png",
+      "image/webp": "webp"
+    };
+    const extension = extensionByType[image.type];
+    if (!extension || image.size > 5 * 1024 * 1024) {
+      throw new Error("A fotografia deve ser JPEG, PNG ou WebP e ter até 5 MB.");
+    }
+
+    imagePath = `${session.user.id}/reviews/${crypto.randomUUID()}.${extension}`;
+    const { error: uploadError } = await supabase.storage
+      .from("review-images")
+      .upload(imagePath, image, { cacheControl: "3600", contentType: image.type, upsert: false });
+    if (uploadError) throw uploadError;
+    imageUrl = supabase.storage.from("review-images").getPublicUrl(imagePath).data.publicUrl;
+  }
+
+  try {
+    return await api<{ review: PublicReview }>("/reviews", session, {
+      method: "POST",
+      body: { ...body, imageUrl }
+    });
+  } catch (error) {
+    if (imagePath && supabase) {
+      const { error: cleanupError } = await supabase.storage.from("review-images").remove([imagePath]);
+      if (cleanupError) {
+        throw new Error(`${(error as Error).message} A fotografia carregada não pôde ser removida.`, { cause: error });
+      }
+    }
+    throw error;
+  }
 }
 
 export function verifyStore(session: Session, storeId: string) {
@@ -188,12 +220,18 @@ export type ReviewPayload = {
   targetId: string;
   rating: number;
   comment: string;
+  imageUrl?: string | null;
+};
+
+export type ReviewSubmission = Omit<ReviewPayload, "imageUrl"> & {
+  image: File | null;
 };
 
 export type PublicReview = {
   id: string;
   rating: number;
   comment: string;
+  imageUrl: string | null;
   createdAt: string;
   client: { name: string | null; avatarUrl: string | null } | null;
 };

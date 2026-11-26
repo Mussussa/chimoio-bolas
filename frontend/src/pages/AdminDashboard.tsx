@@ -1,4 +1,5 @@
 import type { MapStore } from "../lib/types";
+import { FiCheckCircle } from "react-icons/fi";
 
 type AdminDashboardProps = Readonly<{
   stores: MapStore[];
@@ -29,7 +30,7 @@ export default function AdminDashboard({ stores, busy, onVerify }: AdminDashboar
                 <p className="m-0 text-[12px] text-[#716e60]">{store.address || "Endereço não informado"}</p>
               </div>
               <button className="inline-flex min-h-[42px] items-center justify-center gap-[9px] rounded-lg border-0 bg-[#302b18] px-[17px] text-[12px] font-bold text-white transition-[transform,background-color] duration-[160ms] hover:-translate-y-px hover:bg-[#ffd21a] hover:text-[#302b18] disabled:cursor-wait disabled:opacity-[.56]" type="button" disabled={busy} onClick={() => onVerify(store.id)}>
-                Verificar loja
+                <FiCheckCircle aria-hidden="true" /> Verificar loja
               </button>
             </article>
           ))}

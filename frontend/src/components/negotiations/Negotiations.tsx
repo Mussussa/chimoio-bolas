@@ -1,5 +1,6 @@
 import type { FormEvent } from "react";
 import { Link } from "react-router-dom";
+import { FiCheck, FiCheckCircle, FiMessageCircle, FiSend, FiX } from "react-icons/fi";
 import type { MessageForm, Negotiation, Profile } from "../../lib/types";
 import CategoryImage from "../marketplace/CategoryImage";
 import { FALLBACK_IMAGE } from "../../lib/categoryPlaceholders";
@@ -64,10 +65,10 @@ export default function Negotiations({
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <a className="inline-flex min-h-[42px] items-center justify-center gap-[9px] rounded-lg border border-[#c8d6dd] bg-white px-[17px] text-xs font-bold text-[var(--navy)]" href={`#chat-${negotiation.id}`}>Ir para o chat</a>
+              <a className="inline-flex min-h-[42px] items-center justify-center gap-[9px] rounded-lg border border-[#c8d6dd] bg-white px-[17px] text-xs font-bold text-[var(--navy)]" href={`#chat-${negotiation.id}`}><FiMessageCircle aria-hidden="true" />Ir para o chat</a>
               {negotiation.status === "accepted" && profile?.id === negotiation.clientId && (
                 <button type="button" className="inline-flex min-h-[42px] items-center justify-center gap-[9px] rounded-lg bg-[var(--navy)] px-[17px] text-xs font-bold text-white" onClick={() => onComplete(negotiation.id)}>
-                  Confirmar conclusão
+                  <FiCheckCircle aria-hidden="true" />Confirmar conclusão
                 </button>
               )}
             </div>
@@ -101,8 +102,8 @@ export default function Negotiations({
               <p className="mt-1 leading-[1.5]">{message.content}</p>
               <time className={`mt-1.5 block text-[9px] ${message.senderId === profile?.id ? "text-[#c9dfed]" : "text-[#87949b]"}`}>{new Date(message.createdAt).toLocaleString("pt-MZ")}</time>
               {message.messageType === "proposal" && message.senderId !== profile?.id && negotiation.status === "pending" && <span className="mt-2 flex gap-[10px]">
-                <button className="border-0 bg-transparent font-bold text-[var(--blue)]" type="button" onClick={() => onRespondToProposal(negotiation.id, message.id, "accept")}>Aceitar</button>
-                <button className="border-0 bg-transparent font-bold text-[var(--blue)]" type="button" onClick={() => onRespondToProposal(negotiation.id, message.id, "reject")}>Recusar</button>
+                <button className="inline-flex items-center gap-1 border-0 bg-transparent font-bold text-[var(--blue)]" type="button" onClick={() => onRespondToProposal(negotiation.id, message.id, "accept")}><FiCheck aria-hidden="true" />Aceitar</button>
+                <button className="inline-flex items-center gap-1 border-0 bg-transparent font-bold text-[var(--blue)]" type="button" onClick={() => onRespondToProposal(negotiation.id, message.id, "reject")}><FiX aria-hidden="true" />Recusar</button>
               </span>}
             </div>
           ))}</div>
@@ -130,7 +131,7 @@ export default function Negotiations({
                   placeholder="Ex.: 1 500"
                 />
               </label>
-              <button type="submit" className="inline-flex min-h-[42px] items-center justify-center gap-[9px] rounded-lg bg-[var(--navy)] px-[17px] text-xs font-bold text-white disabled:cursor-wait disabled:opacity-[.56]" disabled={busy}>Enviar</button>
+              <button type="submit" className="inline-flex min-h-[42px] items-center justify-center gap-[9px] rounded-lg bg-[var(--navy)] px-[17px] text-xs font-bold text-white disabled:cursor-wait disabled:opacity-[.56]" disabled={busy}><FiSend aria-hidden="true" />Enviar</button>
             </form>
           )}
         </article>

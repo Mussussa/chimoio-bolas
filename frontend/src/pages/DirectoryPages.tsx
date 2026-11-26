@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { FiLogIn, FiMessageCircle } from "react-icons/fi";
 import type { MapStore, Product, Profile, Service, ServiceProvider, Store } from "../lib/types";
 import { providerServiceHref, storeProductHref } from "../lib/publicLinks";
 import { DirectoryFilters } from "../components/marketplace/DirectoryControls";
 import SharePageButton from "../components/marketplace/SharePageButton";
-import MapExplorer from "../components/marketplace/MapExplorer";
+import MapExplorer from "../components/marketplace/LazyMapExplorer";
 import CategoryImage from "../components/marketplace/CategoryImage";
 import { CHIMOIO_NEIGHBORHOODS } from "../lib/chimoioNeighborhoods";
 import { FALLBACK_IMAGE, SERVICE_CATEGORY_IMAGES, STORE_CATEGORY_IMAGES } from "../lib/categoryPlaceholders";
@@ -92,14 +93,15 @@ export function ProductsDirectoryPage({
     () => [...new Set(products.map((product) => product.category).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-MZ")),
     [products]
   );
+  const storesById = useMemo(() => new Map(stores.map((store) => [store.id, store])), [stores]);
   const filteredProducts = useMemo(() => {
     const term = query.trim().toLocaleLowerCase();
     return products.filter((product) => {
-      const store = stores.find((item) => item.id === product.store_id);
+      const store = storesById.get(product.store_id);
       return (!category || product.category === category) &&
         (!term || `${product.name} ${product.description} ${product.category} ${store?.name ?? ""}`.toLocaleLowerCase().includes(term));
     });
-  }, [category, products, query, stores]);
+  }, [category, products, query, storesById]);
   const productMapStores = useMemo(() => {
     const categoriesByStore = new Map<string, Set<string>>();
     for (const product of filteredProducts) {
@@ -110,14 +112,14 @@ export function ProductsDirectoryPage({
     return mapStores.flatMap((mapStore) => {
       const productCategories = categoriesByStore.get(mapStore.id);
       if (!productCategories) return [];
-      const store = stores.find((item) => item.id === mapStore.id);
+      const store = storesById.get(mapStore.id);
       return [{
         ...mapStore,
         category: [...productCategories],
         href: store ? `/lojas/${encodeURIComponent(store.slug)}` : undefined
       }];
     });
-  }, [filteredProducts, mapStores, stores]);
+  }, [filteredProducts, mapStores, storesById]);
 
   async function contactProduct(store: Store, product: Product) {
     const conversationId = await onStartStoreConversation(
@@ -147,9 +149,9 @@ export function ProductsDirectoryPage({
         onClearLocation={onClearLocation}
       />
       {!filteredProducts.length ? <p className="col-span-full rounded-[10px] border border-dashed border-[#cbd8de] p-6 text-center text-[13px] text-[#716e60]">Não encontrámos produtos com estes filtros.</p> : (
-        <div className="grid grid-cols-1 gap-[15px] min-[561px]:grid-cols-2 min-[851px]:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 min-[561px]:gap-[15px] min-[851px]:grid-cols-3">
           {filteredProducts.map((product) => {
-            const store = stores.find((item) => item.id === product.store_id);
+            const store = storesById.get(product.store_id);
             const productHref = store ? storeProductHref(store.slug, product.id) : `/produtos/${encodeURIComponent(product.id)}`;
             const canContactStore = Boolean(
               store && profile && profile.role !== "admin" && store.owner_id !== profile.id
@@ -158,7 +160,7 @@ export function ProductsDirectoryPage({
               ? `${product.name} na loja ${store.name} · ${Number(product.price).toLocaleString("pt-MZ")} MT.`
               : `${product.name} · ${Number(product.price).toLocaleString("pt-MZ")} MT.`;
             return (
-              <article className="min-h-[206px] rounded-xl border border-[#e7e1ca] bg-white p-[22px] shadow-[0_8px_18px_#16354a08]" key={product.id}>
+              <article className="min-h-[206px] rounded-xl border border-[#e7e1ca] bg-white p-3 shadow-[0_8px_18px_#16354a08] min-[561px]:p-[22px]" key={product.id}>
                 <Link to={productHref}><CategoryImage className="my-3 block aspect-video w-full rounded-md bg-[#eef2f4] object-cover" src={product.images?.[0]} placeholder={STORE_CATEGORY_IMAGES[product.category] ?? FALLBACK_IMAGE} alt={product.name} /></Link>
                 <span className="inline-flex rounded-[5px] bg-[#fff7d6] px-2 py-1.5 text-[9px] font-extrabold tracking-[.08em] text-[#765900]">PRODUTO · {product.category}</span>
                 <h2><Link to={productHref}>{product.name}</Link></h2>
@@ -183,11 +185,12 @@ export function ProductsDirectoryPage({
                     disabled={busy}
                     onClick={() => void contactProduct(store, product)}
                   >
-                    Ir para o chat
+                    <FiMessageCircle aria-hidden="true" /> Falar com a loja
                   </button>
                 )}
                 {store && !profile && (
                   <Link className="mt-[15px] inline-flex min-h-[42px] w-full items-center justify-center gap-[9px] rounded-lg border border-[#c8d6dd] bg-white px-[17px] text-[12px] font-bold text-[#302b18]" to="/conta">
+                    <FiLogIn aria-hidden="true" />
                     Inicia sessão para conversar sobre este produto
                   </Link>
                 )}
@@ -287,11 +290,12 @@ export function StoresDirectoryPage({
                     disabled={busy}
                     onClick={() => void contactStore(store)}
                   >
-                    Ir para o chat
+                    <FiMessageCircle aria-hidden="true" /> Falar com a loja
                   </button>
                 )}
                 {!profile && (
                   <Link className="mt-[15px] inline-flex min-h-[42px] w-full items-center justify-center gap-[9px] rounded-lg border border-[#c8d6dd] bg-white px-[17px] text-[12px] font-bold text-[#302b18]" to="/conta">
+                    <FiLogIn aria-hidden="true" />
                     Inicia sessão para conversar com a loja
                   </Link>
                 )}
@@ -319,15 +323,16 @@ export function ServicesDirectoryPage({
     () => [...new Set(services.map((service) => service.category).filter(Boolean))].sort((a, b) => a.localeCompare(b, "pt-MZ")),
     [services]
   );
+  const providersById = useMemo(() => new Map(providers.map((provider) => [provider.id, provider])), [providers]);
   const filteredServices = useMemo(() => {
     const term = query.trim().toLocaleLowerCase();
     return services.filter((service) => {
-      const provider = providers.find((item) => item.id === service.provider_id);
+      const provider = providersById.get(service.provider_id);
       const providerCategories = parseDirectoryCategories(provider?.category);
       return (!category || service.category === category) &&
         (!term || `${service.title} ${service.description} ${service.category} ${providerCategories.join(" ")}`.toLocaleLowerCase().includes(term));
     });
-  }, [category, providers, query, services]);
+  }, [category, providersById, query, services]);
   const serviceMapStores = useMemo<MapStore[]>(() => {
     const servicesByProvider = new Map<string, Service[]>();
     for (const service of filteredServices) {
@@ -378,14 +383,14 @@ export function ServicesDirectoryPage({
         onClearLocation={onClearLocation}
       />
       {!filteredServices.length ? <p className="col-span-full rounded-[10px] border border-dashed border-[#cbd8de] p-6 text-center text-[13px] text-[#716e60]">Não encontrámos serviços com estes filtros.</p> : (
-        <div className="grid grid-cols-1 gap-[15px] min-[561px]:grid-cols-2 min-[851px]:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 min-[561px]:gap-[15px] min-[851px]:grid-cols-3">
           {filteredServices.map((service) => {
-            const provider = providers.find((item) => item.id === service.provider_id);
+            const provider = providersById.get(service.provider_id);
             const serviceHref = provider
               ? providerServiceHref(provider.id, service.id)
               : `/prestadores/${encodeURIComponent(service.provider_id)}`;
             return (
-              <article className="min-h-[206px] rounded-xl border border-[#e7e1ca] border-t-[3px] border-t-[#74ae8f] bg-white p-[22px] shadow-[0_8px_18px_#16354a08]" key={service.id}>
+              <article className="min-h-[206px] rounded-xl border border-[#e7e1ca] border-t-[3px] border-t-[#74ae8f] bg-white p-3 shadow-[0_8px_18px_#16354a08] min-[561px]:p-[22px]" key={service.id}>
                 <Link to={serviceHref}><CategoryImage className="my-3 block aspect-video w-full rounded-md bg-[#eef2f4] object-cover" src={service.images?.[0]} placeholder={SERVICE_CATEGORY_IMAGES[service.category] ?? FALLBACK_IMAGE} alt={service.title} /></Link>
                 <span className="inline-flex rounded-[5px] bg-[#e9f4ef] px-2 py-1.5 text-[9px] font-extrabold tracking-[.08em] text-[#2b745e]">{service.category}</span>
                 <h2><Link to={serviceHref}>{service.title}</Link></h2>
@@ -406,11 +411,12 @@ export function ServicesDirectoryPage({
                     disabled={busy}
                     onClick={() => onStartNegotiation(service.id)}
                   >
-                    Ir para o chat sobre este serviço
+                    <FiMessageCircle aria-hidden="true" /> Falar com o prestador
                   </button>
                 )}
                 {!profile && (
                   <Link className="mt-[15px] inline-flex min-h-[42px] w-full items-center justify-center gap-[9px] rounded-lg border border-[#c8d6dd] bg-white px-[17px] text-[12px] font-bold text-[#302b18]" to="/conta">
+                    <FiLogIn aria-hidden="true" />
                     Inicia sessão para falar sobre este serviço
                   </Link>
                 )}

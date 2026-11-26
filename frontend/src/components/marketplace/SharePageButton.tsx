@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { FiCopy, FiShare2 } from "react-icons/fi";
 
 type SharePageButtonProps = Readonly<{
   title: string;
@@ -84,10 +85,10 @@ export default function SharePageButton({ title, text, label = "Partilhar", url,
     <div>
       <div className="flex flex-wrap gap-2">
         <button type="button" className="inline-flex min-h-[42px] items-center justify-center gap-[9px] rounded-lg border border-[#c8d6dd] bg-white px-[17px] text-xs font-bold text-[var(--navy)]" onClick={() => void sharePage()}>
-          {label}
+          <FiShare2 aria-hidden="true" />{label}
         </button>
         <button type="button" className="inline-flex min-h-[42px] items-center justify-center gap-[9px] rounded-lg border border-[#c8d6dd] bg-white px-[17px] text-xs font-bold text-[var(--navy)]" onClick={() => void copyLink()}>
-          Copiar link
+          <FiCopy aria-hidden="true" />Copiar link
         </button>
       </div>
       {feedback && <p role="status">{feedback}</p>}

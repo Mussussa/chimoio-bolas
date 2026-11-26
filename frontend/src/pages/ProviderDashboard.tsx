@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { FiAlertCircle, FiBriefcase, FiCheckCircle, FiGrid, FiMessageCircle, FiTool, FiUser } from "react-icons/fi";
 import type { Session } from "@supabase/supabase-js";
 import ProviderOverview from "../components/provider/ProviderOverview";
 import ProviderProfileForm from "../components/provider/ProviderProfileForm";
@@ -174,20 +175,20 @@ export default function ProviderDashboard({ session, refreshCatalog, onProfileCh
           <p className="m-0 text-[13px] text-[#716e60]">Apresente as suas competências e mantenha os serviços atualizados.</p>
         </div>
         <span className={`rounded-md px-[11px] py-2 text-[11px] font-bold ${dashboard?.provider.verified ? "bg-[#e6f4ec] text-[#267155]" : "bg-[#fff3da] text-[#885a1c]"}`}>
-          {dashboard?.provider.verified ? "Perfil verificado" : "Perfil não verificado"}
+          <span className="inline-flex items-center gap-1.5">{dashboard?.provider.verified ? <FiCheckCircle aria-hidden="true" /> : <FiBriefcase aria-hidden="true" />}{dashboard?.provider.verified ? "Perfil verificado" : "Perfil não verificado"}</span>
         </span>
       </header>
 
       <nav className="my-5 mb-6 flex gap-6 overflow-x-auto border-b border-[#e7e1ca] max-[560px]:gap-[15px]" aria-label="Secções do painel do prestador">
-        <button type="button" className={`shrink-0 border-0 border-b-2 border-transparent bg-transparent px-0.5 pb-3 text-[13px] font-bold max-[560px]:text-xs ${tab === "overview" ? "border-b-[#2f856c] text-[#2f856c]" : "text-[#716e60]"}`} onClick={() => setTab("overview")}>Visão geral</button>
-        <button type="button" className={`shrink-0 border-0 border-b-2 border-transparent bg-transparent px-0.5 pb-3 text-[13px] font-bold max-[560px]:text-xs ${tab === "profile" ? "border-b-[#2f856c] text-[#2f856c]" : "text-[#716e60]"}`} onClick={() => setTab("profile")}>Perfil profissional</button>
-        <button type="button" className={`shrink-0 border-0 border-b-2 border-transparent bg-transparent px-0.5 pb-3 text-[13px] font-bold max-[560px]:text-xs ${tab === "services" ? "border-b-[#2f856c] text-[#2f856c]" : "text-[#716e60]"}`} onClick={() => setTab("services")}>Serviços</button>
-        <Link className="ml-auto shrink-0 border-b-2 border-transparent px-0.5 pb-3 text-[13px] font-bold text-[#765900] hover:border-b-[#9abbd0] max-[560px]:text-xs" to="/mensagens">Mensagens</Link>
+        <button type="button" aria-pressed={tab === "overview"} className={`inline-flex shrink-0 items-center gap-1.5 border-0 border-b-2 border-transparent bg-transparent px-0.5 pb-3 text-[13px] font-bold max-[560px]:text-xs ${tab === "overview" ? "border-b-[#2f856c] text-[#2f856c]" : "text-[#716e60]"}`} onClick={() => setTab("overview")}><FiGrid aria-hidden="true" />Visão geral</button>
+        <button type="button" aria-pressed={tab === "profile"} className={`inline-flex shrink-0 items-center gap-1.5 border-0 border-b-2 border-transparent bg-transparent px-0.5 pb-3 text-[13px] font-bold max-[560px]:text-xs ${tab === "profile" ? "border-b-[#2f856c] text-[#2f856c]" : "text-[#716e60]"}`} onClick={() => setTab("profile")}><FiUser aria-hidden="true" />Perfil profissional</button>
+        <button type="button" aria-pressed={tab === "services"} className={`inline-flex shrink-0 items-center gap-1.5 border-0 border-b-2 border-transparent bg-transparent px-0.5 pb-3 text-[13px] font-bold max-[560px]:text-xs ${tab === "services" ? "border-b-[#2f856c] text-[#2f856c]" : "text-[#716e60]"}`} onClick={() => setTab("services")}><FiTool aria-hidden="true" />Serviços</button>
+        <Link className="ml-auto inline-flex shrink-0 items-center gap-1.5 border-b-2 border-transparent px-0.5 pb-3 text-[13px] font-bold text-[#765900] hover:border-b-[#9abbd0] max-[560px]:text-xs" to="/mensagens"><FiMessageCircle aria-hidden="true" />Mensagens</Link>
       </nav>
 
-      {error && <p className="my-[14px] block rounded-md bg-[#fff0ec] px-[14px] py-3 text-[13px] text-[#9e3b2e]" role="alert">{error}</p>}
-      {message && <output className="my-[14px] block rounded-md bg-[#eaf5ef] px-[14px] py-3 text-[13px] text-[#267155]">{message}</output>}
-      {loading && <output className="my-[14px] block rounded-md bg-[#eaf5ef] px-[14px] py-3 text-[13px] text-[#267155]">A carregar o painel...</output>}
+      {error && <p className="my-[14px] flex items-start gap-2 rounded-md bg-[#fff0ec] px-[14px] py-3 text-[13px] text-[#9e3b2e]" role="alert"><FiAlertCircle className="mt-0.5 flex-none" aria-hidden="true" />{error}</p>}
+      {message && <output className="my-[14px] flex items-center gap-2 rounded-md bg-[#eaf5ef] px-[14px] py-3 text-[13px] text-[#267155]"><FiCheckCircle aria-hidden="true" />{message}</output>}
+      {loading && <output className="my-[14px] flex items-center gap-2 rounded-md bg-[#eaf5ef] px-[14px] py-3 text-[13px] text-[#267155]" aria-live="polite"><FiBriefcase aria-hidden="true" />A carregar o painel...</output>}
 
       {!loading && dashboard && tab === "overview" && (
         <ProviderOverview

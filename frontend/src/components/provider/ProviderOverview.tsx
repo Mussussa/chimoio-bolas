@@ -1,4 +1,5 @@
 import type { ProviderDashboardData } from "../../lib/api";
+import { FiEdit2, FiTool } from "react-icons/fi";
 
 type ProviderOverviewProps = Readonly<{
   dashboard: ProviderDashboardData;
@@ -20,7 +21,7 @@ export default function ProviderOverview({ dashboard, onEditProfile, onManageSer
         <section className="min-w-0 rounded-lg border border-[var(--line)] bg-white p-[17px]">
           <header className="mb-4 flex items-center justify-between gap-[14px]">
             <h2 className="m-0 font-[Manrope,sans-serif] text-lg font-bold text-[var(--navy)]">Perfil profissional</h2>
-            <button type="button" className="border-0 bg-transparent font-bold text-[var(--blue)]" onClick={onEditProfile}>Editar perfil</button>
+            <button type="button" className="inline-flex items-center gap-1.5 border-0 bg-transparent font-bold text-[var(--blue)]" onClick={onEditProfile}><FiEdit2 aria-hidden="true" />Editar perfil</button>
           </header>
           <div className="my-3 mb-4 flex items-center gap-[14px]">
             {profile.avatarUrl
@@ -34,7 +35,7 @@ export default function ProviderOverview({ dashboard, onEditProfile, onManageSer
         <section className="min-w-0 rounded-lg border border-[var(--line)] bg-white p-[17px]">
           <header className="mb-4 flex items-center justify-between gap-[14px]">
             <h2 className="m-0 font-[Manrope,sans-serif] text-lg font-bold text-[var(--navy)]">Últimos serviços</h2>
-            <button type="button" className="border-0 bg-transparent font-bold text-[var(--blue)]" onClick={onManageServices}>Gerir serviços</button>
+            <button type="button" className="inline-flex items-center gap-1.5 border-0 bg-transparent font-bold text-[var(--blue)]" onClick={onManageServices}><FiTool aria-hidden="true" />Gerir serviços</button>
           </header>
           {services.length === 0 ? <p className="py-3 text-xs leading-[1.6] text-[var(--muted)]">Ainda não tem serviços publicados.</p> : services.slice(0, 4).map((service) => (
             <div className="flex justify-between gap-3 border-b border-[#edf1f3] py-3 text-xs text-[var(--navy)]" key={service.id}>

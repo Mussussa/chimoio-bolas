@@ -1,6 +1,20 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { FiArrowUpRight, FiFileText, FiLock, FiShield, FiUser } from "react-icons/fi";
+import {
+  FiArrowUpRight,
+  FiCompass,
+  FiFileText,
+  FiGrid,
+  FiLock,
+  FiLogIn,
+  FiLogOut,
+  FiMessageCircle,
+  FiPackage,
+  FiShield,
+  FiShoppingBag,
+  FiTool,
+  FiUser
+} from "react-icons/fi";
 import type { Notice, Profile } from "../../lib/types";
 
 type HeaderProps = Readonly<{
@@ -22,13 +36,13 @@ return (
       <span className="grid h-[42px] w-[42px] place-items-center rounded-[13px] bg-[var(--yellow)] font-[Manrope,sans-serif] text-xl font-extrabold text-[var(--navy)]">Y</span>
       <span><b className="text-[var(--blue)]">YELLOW</b><small className="mt-[5px] block text-[9px] font-bold tracking-[.17em] text-[#83929c]">NEGÓCIOS LOCAIS · CHIMOIO</small></span>
     </Link>
-    <nav className="flex gap-[clamp(16px,3vw,42px)] whitespace-nowrap text-[13px] font-semibold text-[#516574] max-[850px]:overflow-x-auto max-[560px]:order-3 max-[560px]:w-full" aria-label="Navegação principal">
-      <Link className="hover:text-[var(--blue)]" to="/">Explorar</Link>
-      <Link className="hover:text-[var(--blue)]" to="/produtos">Produtos</Link>
-      <Link className="hover:text-[var(--blue)]" to="/servicos">Serviços</Link>
-      <Link className="hover:text-[var(--blue)]" to="/lojas">Lojas</Link>
-      {profile && profile.role !== "admin" && <Link className="hover:text-[var(--blue)]" to="/mensagens">Mensagens{pendingNegotiations > 0 && <span className="ml-1 rounded-full bg-[var(--yellow)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--navy)]" aria-label={`${pendingNegotiations} pendentes`}>{pendingNegotiations}</span>}</Link>}
-      {profile && <Link className="hover:text-[var(--blue)]" to="/painel">{dashboardLabels[profile.role]}</Link>}
+    <nav className="flex items-center gap-[clamp(12px,2.4vw,30px)] whitespace-nowrap text-[13px] font-semibold text-[#516574] max-[850px]:overflow-x-auto max-[560px]:order-3 max-[560px]:w-full max-[560px]:pb-1" aria-label="Navegação principal">
+      <Link className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2 transition-colors hover:bg-[#f3f6f7] hover:text-[var(--blue)]" to="/"><FiCompass aria-hidden="true" />Explorar</Link>
+      <Link className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2 transition-colors hover:bg-[#f3f6f7] hover:text-[var(--blue)]" to="/produtos"><FiPackage aria-hidden="true" />Produtos</Link>
+      <Link className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2 transition-colors hover:bg-[#f3f6f7] hover:text-[var(--blue)]" to="/servicos"><FiTool aria-hidden="true" />Serviços</Link>
+      <Link className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2 transition-colors hover:bg-[#f3f6f7] hover:text-[var(--blue)]" to="/lojas"><FiShoppingBag aria-hidden="true" />Lojas</Link>
+      {profile && profile.role !== "admin" && <Link className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2 transition-colors hover:bg-[#f3f6f7] hover:text-[var(--blue)]" to="/mensagens"><FiMessageCircle aria-hidden="true" />Mensagens{pendingNegotiations > 0 && <span className="ml-0.5 rounded-full bg-[var(--yellow)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--navy)]" aria-label={`${pendingNegotiations} pendentes`}>{pendingNegotiations}</span>}</Link>}
+      {profile && <Link className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2 transition-colors hover:bg-[#f3f6f7] hover:text-[var(--blue)]" to="/painel"><FiGrid aria-hidden="true" />{dashboardLabels[profile.role]}</Link>}
     </nav>
     <div className="flex items-center gap-[14px] text-xs text-[var(--muted)] max-[560px]:ml-auto">
       {profile ? <>
@@ -47,8 +61,8 @@ return (
               </span>}
           <span className="max-w-[150px] truncate font-bold max-[560px]:sr-only">{profile.name}</span>
         </Link>
-        <button className="inline-flex min-h-[42px] items-center justify-center gap-[9px] rounded-lg border border-[#c8d6dd] bg-white px-[17px] text-xs font-bold text-[var(--navy)]" onClick={onSignOut}>Sair</button>
-      </> : <Link className="inline-flex min-h-[42px] items-center justify-center gap-[9px] rounded-lg bg-[var(--navy)] px-[17px] text-xs font-bold text-white" to="/conta">Entrar</Link>}
+        <button className="inline-flex min-h-[42px] items-center justify-center gap-[9px] rounded-lg border border-[#c8d6dd] bg-white px-[17px] text-xs font-bold text-[var(--navy)] transition-colors hover:bg-[#f3f6f7]" onClick={onSignOut}><FiLogOut aria-hidden="true" />Sair</button>
+      </> : <Link className="inline-flex min-h-[42px] items-center justify-center gap-[9px] rounded-lg bg-[var(--navy)] px-[17px] text-xs font-bold text-white transition-colors hover:bg-[var(--blue)]" to="/conta"><FiLogIn aria-hidden="true" />Entrar</Link>}
     </div>
   </header>
 );
@@ -81,7 +95,7 @@ export function Hero() {
         <p className="text-[10px] font-extrabold tracking-[.17em] text-[#ffe58a]">MERCADO HIPERLOCAL · CHIMOIO</p>
         <h1 className="my-[13px] mt-[19px] font-[Manrope,sans-serif] text-[clamp(38px,5vw,62px)] font-extrabold leading-[1.08] tracking-[-.05em]">Encontre perto.<br /><em className="not-italic text-[var(--yellow)]">Negocie directo.</em></h1>
         <p className="max-w-[430px] text-sm leading-[1.7] text-[#d1e4f0]">Marketplace gratuito e aberto para descobrir negócios locais, publicar serviços e negociar directamente.</p>
-        <a className="mt-[15px] inline-flex min-h-[42px] items-center justify-center gap-[9px] rounded-lg bg-white px-[17px] text-xs font-bold text-[var(--navy)]" href="#mercado">Explorar ofertas <span>↗</span></a>
+        <a className="mt-[15px] inline-flex min-h-[42px] items-center justify-center gap-[9px] rounded-lg bg-white px-[17px] text-xs font-bold text-[var(--navy)]" href="#mercado">Explorar ofertas <FiArrowUpRight aria-hidden="true" /></a>
       </div>
       <div className="relative z-[1] mr-[4vw] grid h-[180px] w-[180px] rotate-[-12deg] content-center place-items-center rounded-full border border-[#ffffff65] text-[#d9eafa] max-[700px]:self-center before:absolute before:inset-3 before:rounded-full before:border before:border-dashed before:border-[#ffffff70]">
         <span className="text-[9px] tracking-[.17em]">19°07′ S</span><b className="my-2 font-[Manrope,sans-serif] text-[21px] font-extrabold tracking-[.1em] text-white">CHIMOIO</b><span className="text-[9px] tracking-[.17em]">33°29′ E</span>

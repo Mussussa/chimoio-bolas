@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { FiExternalLink, FiMapPin, FiNavigation, FiX } from "react-icons/fi";
+import "leaflet/dist/leaflet.css";
 import { Circle, CircleMarker, MapContainer, Popup, TileLayer, useMap } from "react-leaflet";
 import { CHIMOIO_NEIGHBORHOODS } from "../../lib/chimoioNeighborhoods";
 import type { MapStore } from "../../lib/types";
@@ -126,7 +128,7 @@ export default function MapExplorer({
           </select>
         </label>
         {onLocate && (
-          <button className="inline-flex min-h-[42px] items-center justify-center gap-[9px] rounded-lg border border-[#c8d6dd] bg-white px-[17px] text-xs font-bold text-[var(--navy)]" type="button" onClick={onLocate}>Usar a minha localização</button>
+          <button className="inline-flex min-h-[42px] items-center justify-center gap-[9px] rounded-lg border border-[#c8d6dd] bg-white px-[17px] text-xs font-bold text-[var(--navy)]" type="button" onClick={onLocate}><FiNavigation aria-hidden="true" />Usar a minha localização</button>
         )}
         {(gps || selectedNeighborhood) && (
           <button
@@ -134,11 +136,12 @@ export default function MapExplorer({
             type="button"
             onClick={() => { setSelectedNeighborhood(""); onClearLocation?.(); }}
           >
-            Limpar localização
+            <FiX aria-hidden="true" />Limpar localização
           </button>
         )}
       </div>
-      <p className="m-0 text-xs text-[var(--muted)]" role="status">
+      <p className="m-0 inline-flex items-center gap-1.5 text-xs text-[var(--muted)]" role="status">
+        <FiMapPin aria-hidden="true" />
         {loading && stores.length === 0
           ? `A carregar ${entityLabel} do mapa…`
           : center
@@ -178,7 +181,7 @@ export default function MapExplorer({
                       <span className="text-xs text-[var(--muted)]">{store.address}</span>
                       <Link className="text-xs font-bold text-[var(--blue)]" to={store.href ?? `/lojas/${store.id}`}>{popupLinkLabel}</Link>
                       <a className="text-xs font-bold text-[var(--blue)]" href={directionsUrl(store, gps)} target="_blank" rel="noreferrer">
-                        Abrir rota no Google Maps
+                        <FiExternalLink aria-hidden="true" /> Abrir rota no Google Maps
                       </a>
                     </article>
                   ))}

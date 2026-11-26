@@ -104,6 +104,7 @@ export type ProviderReview = {
   target_id: string;
   rating: number;
   comment: string;
+  image_url: string | null;
   created_at: string;
   reviewer_name: string | null;
   reviewer_avatar_url: string | null;

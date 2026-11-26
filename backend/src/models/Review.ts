@@ -15,6 +15,7 @@ export class Review extends Model<InferAttributes<Review>, InferCreationAttribut
   declare targetId: string;
   declare rating: number;
   declare comment: string;
+  declare imageUrl: string | null;
   declare createdAt: CreationOptional<Date>;
 }
 
@@ -26,6 +27,7 @@ export function initializeReviewModel(sequelize: Sequelize): void {
     targetId: { type: DataTypes.UUID, allowNull: false, field: "target_id" },
     rating: { type: DataTypes.INTEGER, allowNull: false, validate: { min: 1, max: 5 } },
     comment: { type: DataTypes.TEXT, allowNull: false, defaultValue: "" },
+    imageUrl: { type: DataTypes.TEXT, allowNull: true, field: "image_url" },
     createdAt: { type: DataTypes.DATE, field: "created_at" }
   }, { ...modelOptions(sequelize, "reviews"), indexes: [{ unique: true, fields: ["client_id", "target_type", "target_id"] }] });
 }

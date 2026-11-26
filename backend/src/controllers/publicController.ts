@@ -2,23 +2,7 @@ import type { RequestHandler } from "express";
 import { Op } from "sequelize";
 import { sendError, sendSuccess } from "../http/responses.js";
 import { Product, Review, Service, ServiceProvider, Store, User } from "../models/index.js";
-
-type PublicReviewRecord = Pick<Review, "id" | "rating" | "comment" | "createdAt"> & {
-  client?: Pick<User, "name" | "avatarUrl"> | null;
-};
-
-function toPublicReview(review: Review) {
-  const record = review.toJSON() as PublicReviewRecord;
-  return {
-    id: record.id,
-    rating: record.rating,
-    comment: record.comment,
-    createdAt: record.createdAt,
-    client: record.client
-      ? { name: record.client.name, avatarUrl: record.client.avatarUrl }
-      : null
-  };
-}
+import { serializePublicReview } from "./publicReview.js";
 
 // Carrega loja, produtos e avaliações públicas; o frontend usa-os na página de detalhe da loja.
 export const getPublicStore: RequestHandler = async (req, res, next) => {
@@ -33,12 +17,12 @@ export const getPublicStore: RequestHandler = async (req, res, next) => {
       Product.findAll({ where: { storeId: store.id }, order: [["createdAt", "DESC"]] }),
       Review.findAll({
         where: { targetType: "store", targetId: store.id },
-        attributes: ["id", "rating", "comment", "createdAt"],
+        attributes: ["id", "rating", "comment", "imageUrl", "createdAt"],
         include: [{ model: User, as: "client", attributes: ["name", "avatarUrl"] }],
         order: [["createdAt", "DESC"]]
       })
     ]);
-    return sendSuccess(res, { store, products, reviews: reviews.map(toPublicReview) }, 200, "Loja carregada.");
+    return sendSuccess(res, { store, products, reviews: reviews.map(serializePublicReview) }, 200, "Loja carregada.");
   } catch (error) {
     next(error);
   }
@@ -72,12 +56,12 @@ export const getPublicProvider: RequestHandler = async (req, res, next) => {
       }),
       Review.findAll({
         where: { targetType: "service_provider", targetId: provider.id },
-        attributes: ["id", "rating", "comment", "createdAt"],
+        attributes: ["id", "rating", "comment", "imageUrl", "createdAt"],
         include: [{ model: User, as: "client", attributes: ["name", "avatarUrl"] }],
         order: [["createdAt", "DESC"]]
       })
     ]);
-    return sendSuccess(res, { provider, profile, services, reviews: reviews.map(toPublicReview) }, 200, "Perfil público do prestador carregado.");
+    return sendSuccess(res, { provider, profile, services, reviews: reviews.map(serializePublicReview) }, 200, "Perfil público do prestador carregado.");
   } catch (error) {
     next(error);
   }
@@ -95,11 +79,11 @@ export const getPublicReviews: RequestHandler = async (req, res, next) => {
 
     const reviews = await Review.findAll({
       where: { targetType, targetId },
-      attributes: ["id", "rating", "comment", "createdAt"],
+      attributes: ["id", "rating", "comment", "imageUrl", "createdAt"],
       include: [{ model: User, as: "client", attributes: ["name", "avatarUrl"] }],
       order: [["createdAt", "DESC"]]
     });
-    return sendSuccess(res, { reviews: reviews.map(toPublicReview) }, 200, "Avaliações carregadas.");
+    return sendSuccess(res, { reviews: reviews.map(serializePublicReview) }, 200, "Avaliações carregadas.");
   } catch (error) {
     next(error);
   }

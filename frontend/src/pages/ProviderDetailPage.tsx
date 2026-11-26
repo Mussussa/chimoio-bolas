@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
-import { loadPublicProvider, type PublicProviderDetail, type ReviewPayload } from "../lib/api";
+import { FiArrowLeft, FiMessageCircle } from "react-icons/fi";
+import { loadPublicProvider, type PublicProviderDetail, type PublicReview, type ReviewSubmission } from "../lib/api";
 import { providerServiceHref } from "../lib/publicLinks";
 import type { Profile } from "../lib/types";
 import ReviewForm from "../components/marketplace/ReviewForm";
@@ -12,7 +13,7 @@ import { FALLBACK_IMAGE, SERVICE_CATEGORY_IMAGES } from "../lib/categoryPlacehol
 type ProviderDetailPageProps = Readonly<{
   profile: Profile | null;
   busy: boolean;
-  onReview: (review: ReviewPayload) => Promise<boolean>;
+  onReview: (review: ReviewSubmission) => Promise<PublicReview | null>;
   onStartNegotiation: (serviceId: string) => void;
 }>;
 
@@ -23,6 +24,11 @@ export default function ProviderDetailPage({
   const location = useLocation();
   const [detail, setDetail] = useState<PublicProviderDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const submitReview = useCallback(async (review: ReviewSubmission) => {
+    const saved = await onReview(review);
+    if (saved) setDetail((current) => current ? { ...current, reviews: [saved, ...current.reviews] } : current);
+    return saved;
+  }, [onReview]);
 
   useEffect(() => {
     let active = true;
@@ -47,7 +53,7 @@ export default function ProviderDetailPage({
 
   return (
     <article className="min-h-[65vh] px-[clamp(20px,7vw,100px)] py-[70px] max-[560px]:py-12">
-      <Link to="/" className="mb-5 inline-block text-[13px] font-bold text-[#765900]">← Voltar a explorar</Link>
+      <Link to="/" className="mb-5 inline-flex items-center gap-1.5 text-[13px] font-bold text-[#765900]"><FiArrowLeft aria-hidden="true" />Voltar a explorar</Link>
       <header className="my-2 flex flex-col items-start gap-[22px] min-[561px]:flex-row min-[561px]:items-center">
         {providerProfile?.avatarUrl && <img className="h-[100px] w-[100px] rounded-full bg-[#eaf1f4] object-cover" src={providerProfile.avatarUrl} alt="" />}
         <div>
@@ -77,7 +83,7 @@ export default function ProviderDetailPage({
                 />
                 {profile?.role === "client" && (
                   <button className="mt-[15px] inline-flex min-h-[42px] w-full items-center justify-center gap-[9px] rounded-lg border-0 bg-[#302b18] px-[17px] text-[12px] font-bold text-white transition-[transform,background-color] duration-[160ms] hover:-translate-y-px hover:bg-[#ffd21a] hover:text-[#302b18] disabled:cursor-wait disabled:opacity-[.56]" disabled={busy} onClick={() => onStartNegotiation(service.id)}>
-                    Ir para o chat sobre este serviço
+                    <FiMessageCircle aria-hidden="true" /> Falar com o prestador
                   </button>
                 )}
               </article>
@@ -86,7 +92,7 @@ export default function ProviderDetailPage({
         ) : <p className="col-span-full rounded-[10px] border border-dashed border-[#cbd8de] p-6 text-center text-[13px] text-[#716e60]">Este prestador ainda não publicou serviços.</p>}
       </section>
       <ReviewSection reviews={reviews} />
-      {profile?.role === "client" && <ReviewForm targetType="service_provider" targetId={provider.id} targetName={providerProfile?.name ?? "prestador"} busy={busy} onSubmit={onReview} />}
+      {profile?.role === "client" && <ReviewForm targetType="service_provider" targetId={provider.id} targetName={providerProfile?.name ?? "prestador"} busy={busy} onSubmit={submitReview} />}
     </article>
   );
 }
