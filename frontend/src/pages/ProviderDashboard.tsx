@@ -18,6 +18,7 @@ import {
 } from "../lib/api";
 import type { Profile, ProviderServiceForm as ProviderServiceDraft } from "../lib/types";
 import { supabase } from "../lib/supabase";
+import { createUuid } from "../lib/uuid";
 
 type ProviderDashboardProps = Readonly<{
   session: Session;
@@ -77,7 +78,7 @@ export default function ProviderDashboard({ session, refreshCatalog, onProfileCh
     if (!extension || file.size > 5 * 1024 * 1024) {
       throw new Error("Cada imagem deve ser JPEG, PNG ou WebP e ter até 5 MB.");
     }
-    const filePath = `${session.user.id}/${folder}/${crypto.randomUUID()}.${extension}`;
+    const filePath = `${session.user.id}/${folder}/${createUuid()}.${extension}`;
     const { error: uploadError } = await supabase.storage
       .from("provider-media")
       .upload(filePath, file, { cacheControl: "3600", contentType: file.type, upsert: false });

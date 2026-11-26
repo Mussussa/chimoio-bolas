@@ -17,6 +17,7 @@ import {
   type MerchantStore
 } from "../lib/api";
 import { supabase } from "../lib/supabase";
+import { createUuid } from "../lib/uuid";
 import {
   toMerchantStoreDraft,
   type MerchantProductDraft,
@@ -107,7 +108,7 @@ export default function MerchantDashboard({ session, refreshKey, children }: Mer
       const storeNameSlug = storeDraft?.name
         ? storeDraft.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
         : "loja";
-      const filePath = `${session.user.id}/${storeNameSlug}-${crypto.randomUUID()}.${extension}`;
+      const filePath = `${session.user.id}/${storeNameSlug}-${createUuid()}.${extension}`;
       
       // O primeiro segmento do caminho identifica o proprietário segundo a política do bucket.
       const { error: uploadError } = await supabase.storage

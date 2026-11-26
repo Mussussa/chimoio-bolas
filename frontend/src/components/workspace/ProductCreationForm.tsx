@@ -3,6 +3,7 @@ import type { Session } from "@supabase/supabase-js";
 import { FiCheckCircle, FiDollarSign, FiImage, FiPackage, FiTag, FiUpload } from "react-icons/fi";
 import type { ProductForm } from "../../lib/types";
 import { supabase } from "../../lib/supabase";
+import { createUuid } from "../../lib/uuid";
 import WorkspaceCard, { workspaceButtonClass, workspaceFieldClass, workspaceInputClass } from "./WorkspaceCard";
 
 type ProductCreationFormProps = Readonly<{
@@ -67,7 +68,7 @@ export default function ProductCreationForm({ session, busy, productCategories, 
         throw new Error("A fotografia deve ser JPEG, PNG ou WebP e ter até 5 MB.");
       }
 
-      filePath = `${session.user.id}/product-images/${crypto.randomUUID()}.${fileExt}`;
+      filePath = `${session.user.id}/product-images/${createUuid()}.${fileExt}`;
       const { error: uploadError } = await supabase.storage
         .from("products")
         .upload(filePath, productImageFile, { cacheControl: "3600", contentType: productImageFile.type, upsert: false });

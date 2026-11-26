@@ -240,7 +240,7 @@ export default function MarketplacePage() {
   }
 
   return (
-    <main className="mx-auto min-h-screen max-w-[1440px] overflow-hidden bg-[#fbfaf6] pt-[82px] max-[560px]:pt-[130px]">
+    <main className="app-shell mx-auto min-h-screen max-w-[1440px] overflow-hidden bg-[#fbfaf6] pt-[82px] max-[560px]:pt-[145px]">
       <NoticeBanner notice={notice} onDismiss={dismissNotice} />
       <SiteHeader
         profile={profile}

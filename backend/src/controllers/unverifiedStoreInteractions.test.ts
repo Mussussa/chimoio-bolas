@@ -5,6 +5,9 @@ import { createReview } from "./reviewsController.js";
 import { getPublicReviews } from "./publicController.js";
 import { requestSchemas } from "../validation/schemas.js";
 
+const testSupabaseUrl = "https://project.supabase.co";
+process.env.SUPABASE_URL = testSupabaseUrl;
+
 function createResponse() {
   const response = {
     status: vi.fn(),
@@ -110,13 +113,13 @@ describe("interacções com lojas não verificadas", () => {
       targetType: "store",
       targetId: "00000000-0000-4000-8000-000000000001",
       rating: 5,
-      imageUrl: "https://example.test/review.jpg"
+      imageUrl: `${testSupabaseUrl}/storage/v1/object/public/review-images/user/review.jpg`
     });
     const invalid = requestSchemas.createReview.validate({
       targetType: "store",
       targetId: "00000000-0000-4000-8000-000000000001",
       rating: 5,
-      imageUrl: "not-a-url"
+      imageUrl: "https://external.example/review.jpg"
     });
 
     expect(valid.error).toBeUndefined();

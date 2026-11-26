@@ -3,6 +3,7 @@ import type { Session } from "@supabase/supabase-js";
 import { loadProfile, updateProfile as updateProfileRequest } from "../lib/api";
 import { supabase } from "../lib/supabase";
 import type { AuthForm, Notice, Profile, ProfileUpdate } from "../lib/types";
+import { createUuid } from "../lib/uuid";
 
 type UseAuthOptions = {
   setNotice: Dispatch<SetStateAction<Notice>>;
@@ -89,7 +90,7 @@ export default function useAuth({ setNotice, setBusy }: UseAuthOptions) {
         if (!extension || avatarFile.size > 5 * 1024 * 1024) {
           throw new Error("A fotografia deve ser JPEG, PNG ou WebP e ter até 5 MB.");
         }
-        const filePath = `${session.user.id}/profile/${crypto.randomUUID()}.${extension}`;
+        const filePath = `${session.user.id}/profile/${createUuid()}.${extension}`;
         const { error: uploadError } = await supabase.storage
           .from("provider-media")
           .upload(filePath, avatarFile, { cacheControl: "3600", contentType: avatarFile.type, upsert: false });

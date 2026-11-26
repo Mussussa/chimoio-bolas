@@ -31,23 +31,23 @@ export function SiteHeader({ profile, pendingNegotiations, onSignOut }: HeaderPr
     admin: "Administração"
   };
 return (
-  <header className="fixed top-0 left-0 right-0 z-50 flex h-[82px] items-center justify-between gap-6 border-b border-[var(--line)] bg-white px-[clamp(20px,6vw,88px)] max-[850px]:gap-3 max-[560px]:h-auto max-[560px]:min-h-[82px] max-[560px]:flex-wrap" role="banner">
-    <Link className="flex items-center gap-3 font-[Manrope,sans-serif] text-[17px] font-extrabold leading-[1.15]" to="/">
-      <span className="grid h-[42px] w-[42px] place-items-center rounded-[13px] bg-[var(--yellow)] font-[Manrope,sans-serif] text-xl font-extrabold text-[var(--navy)]">Y</span>
-      <span><b className="text-[var(--blue)]">YELLOW</b><small className="mt-[5px] block text-[9px] font-bold tracking-[.17em] text-[#83929c]">NEGÓCIOS LOCAIS · CHIMOIO</small></span>
+  <header className="fixed top-0 left-0 right-0 z-50 flex h-[82px] items-center justify-between gap-6 border-b border-[var(--line)] bg-white px-[clamp(20px,6vw,88px)] max-[850px]:gap-3 max-[560px]:grid max-[560px]:h-auto max-[560px]:min-h-0 max-[560px]:grid-cols-[minmax(0,1fr)_auto] max-[560px]:gap-x-2 max-[560px]:gap-y-1.5 max-[560px]:px-3 max-[560px]:py-2" role="banner">
+    <Link className="flex min-w-0 items-center gap-3 font-[Manrope,sans-serif] text-[17px] font-extrabold leading-[1.15] max-[560px]:gap-2" to="/">
+      <span className="grid h-[42px] w-[42px] flex-none place-items-center rounded-[13px] bg-[var(--yellow)] font-[Manrope,sans-serif] text-xl font-extrabold text-[var(--navy)] max-[560px]:h-9 max-[560px]:w-9">Y</span>
+      <span className="min-w-0"><b className="text-[var(--blue)]">YELLOW</b><small className="mt-[5px] block truncate text-[9px] font-bold tracking-[.17em] text-[#83929c] max-[560px]:mt-0.5 max-[560px]:text-[8px] max-[560px]:tracking-[.1em]">NEGÓCIOS LOCAIS · CHIMOIO</small></span>
     </Link>
-    <nav className="flex items-center gap-[clamp(12px,2.4vw,30px)] whitespace-nowrap text-[13px] font-semibold text-[#516574] max-[850px]:overflow-x-auto max-[560px]:order-3 max-[560px]:w-full max-[560px]:pb-1" aria-label="Navegação principal">
-      <Link className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2 transition-colors hover:bg-[#f3f6f7] hover:text-[var(--blue)]" to="/"><FiCompass aria-hidden="true" />Explorar</Link>
-      <Link className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2 transition-colors hover:bg-[#f3f6f7] hover:text-[var(--blue)]" to="/produtos"><FiPackage aria-hidden="true" />Produtos</Link>
-      <Link className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2 transition-colors hover:bg-[#f3f6f7] hover:text-[var(--blue)]" to="/servicos"><FiTool aria-hidden="true" />Serviços</Link>
-      <Link className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2 transition-colors hover:bg-[#f3f6f7] hover:text-[var(--blue)]" to="/lojas"><FiShoppingBag aria-hidden="true" />Lojas</Link>
-      {profile && profile.role !== "admin" && <Link className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2 transition-colors hover:bg-[#f3f6f7] hover:text-[var(--blue)]" to="/mensagens"><FiMessageCircle aria-hidden="true" />Mensagens{pendingNegotiations > 0 && <span className="ml-0.5 rounded-full bg-[var(--yellow)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--navy)]" aria-label={`${pendingNegotiations} pendentes`}>{pendingNegotiations}</span>}</Link>}
-      {profile && <Link className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2 transition-colors hover:bg-[#f3f6f7] hover:text-[var(--blue)]" to="/painel"><FiGrid aria-hidden="true" />{dashboardLabels[profile.role]}</Link>}
+    <nav className="flex items-center gap-[clamp(12px,2.4vw,30px)] whitespace-nowrap text-[13px] font-semibold text-[#516574] max-[850px]:overflow-x-auto max-[560px]:col-span-2 max-[560px]:row-start-2 max-[560px]:grid max-[560px]:w-full max-[560px]:grid-cols-3 max-[560px]:gap-1 max-[560px]:overflow-visible max-[560px]:whitespace-normal" aria-label="Navegação principal">
+      <Link className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2 transition-colors hover:bg-[#f3f6f7] hover:text-[var(--blue)] max-[560px]:min-h-9 max-[560px]:flex-col max-[560px]:justify-center max-[560px]:gap-0.5 max-[560px]:px-1 max-[560px]:py-1 max-[560px]:text-[10px] max-[560px]:leading-tight" to="/"><FiCompass aria-hidden="true" size={15} />Explorar</Link>
+      <Link className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2 transition-colors hover:bg-[#f3f6f7] hover:text-[var(--blue)] max-[560px]:min-h-9 max-[560px]:flex-col max-[560px]:justify-center max-[560px]:gap-0.5 max-[560px]:px-1 max-[560px]:py-1 max-[560px]:text-[10px] max-[560px]:leading-tight" to="/produtos"><FiPackage aria-hidden="true" size={15} />Produtos</Link>
+      <Link className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2 transition-colors hover:bg-[#f3f6f7] hover:text-[var(--blue)] max-[560px]:min-h-9 max-[560px]:flex-col max-[560px]:justify-center max-[560px]:gap-0.5 max-[560px]:px-1 max-[560px]:py-1 max-[560px]:text-[10px] max-[560px]:leading-tight" to="/servicos"><FiTool aria-hidden="true" size={15} />Serviços</Link>
+      <Link className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2 transition-colors hover:bg-[#f3f6f7] hover:text-[var(--blue)] max-[560px]:min-h-9 max-[560px]:flex-col max-[560px]:justify-center max-[560px]:gap-0.5 max-[560px]:px-1 max-[560px]:py-1 max-[560px]:text-[10px] max-[560px]:leading-tight" to="/lojas"><FiShoppingBag aria-hidden="true" size={15} />Lojas</Link>
+      {profile && profile.role !== "admin" && <Link className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2 transition-colors hover:bg-[#f3f6f7] hover:text-[var(--blue)] max-[560px]:min-h-9 max-[560px]:flex-col max-[560px]:justify-center max-[560px]:gap-0.5 max-[560px]:px-1 max-[560px]:py-1 max-[560px]:text-[10px] max-[560px]:leading-tight" to="/mensagens"><span className="inline-flex items-center gap-1"><FiMessageCircle aria-hidden="true" size={15} />{pendingNegotiations > 0 && <span className="rounded-full bg-[var(--yellow)] px-1 py-0.5 text-[9px] font-bold text-[var(--navy)]" aria-label={`${pendingNegotiations} pendentes`}>{pendingNegotiations}</span>}</span>Mensagens</Link>}
+      {profile && <Link className="inline-flex min-h-10 items-center gap-1.5 rounded-lg px-2 transition-colors hover:bg-[#f3f6f7] hover:text-[var(--blue)] max-[560px]:min-h-9 max-[560px]:flex-col max-[560px]:justify-center max-[560px]:gap-0.5 max-[560px]:px-1 max-[560px]:py-1 max-[560px]:text-[10px] max-[560px]:leading-tight" to="/painel"><FiGrid aria-hidden="true" size={15} /><span className="max-[560px]:hidden">{dashboardLabels[profile.role]}</span><span className="hidden max-[560px]:inline">{profile.role === "lojista" ? "Minha loja" : profile.role === "client" ? "Negócio" : profile.role === "admin" ? "Admin" : "Painel"}</span></Link>}
     </nav>
-    <div className="flex items-center gap-[14px] text-xs text-[var(--muted)] max-[560px]:ml-auto">
+    <div className="flex items-center gap-[14px] text-xs text-[var(--muted)] max-[560px]:col-start-2 max-[560px]:row-start-1 max-[560px]:justify-self-end max-[560px]:gap-1">
       {profile ? <>
         <Link
-          className="inline-flex min-w-0 items-center gap-2 rounded-full p-1.5 pr-2.5 text-[var(--navy)] transition-colors hover:bg-[#f3f6f7]"
+          className="inline-flex min-w-0 items-center gap-2 rounded-full p-1.5 pr-2.5 text-[var(--navy)] transition-colors hover:bg-[#f3f6f7] max-[560px]:p-0.5"
           to="/conta"
           aria-label={`Editar perfil de ${profile.name}`}
           title="Editar perfil"
@@ -61,8 +61,8 @@ return (
               </span>}
           <span className="max-w-[150px] truncate font-bold max-[560px]:sr-only">{profile.name}</span>
         </Link>
-        <button className="inline-flex min-h-[42px] items-center justify-center gap-[9px] rounded-lg border border-[#c8d6dd] bg-white px-[17px] text-xs font-bold text-[var(--navy)] transition-colors hover:bg-[#f3f6f7]" onClick={onSignOut}><FiLogOut aria-hidden="true" />Sair</button>
-      </> : <Link className="inline-flex min-h-[42px] items-center justify-center gap-[9px] rounded-lg bg-[var(--navy)] px-[17px] text-xs font-bold text-white transition-colors hover:bg-[var(--blue)]" to="/conta"><FiLogIn aria-hidden="true" />Entrar</Link>}
+        <button className="inline-flex min-h-[42px] items-center justify-center gap-[9px] rounded-lg border border-[#c8d6dd] bg-white px-[17px] text-xs font-bold text-[var(--navy)] transition-colors hover:bg-[#f3f6f7] max-[560px]:min-h-9 max-[560px]:gap-1.5 max-[560px]:px-2.5 max-[560px]:text-[11px]" onClick={onSignOut}><FiLogOut aria-hidden="true" />Sair</button>
+      </> : <Link className="inline-flex min-h-[42px] items-center justify-center gap-[9px] rounded-lg bg-[var(--navy)] px-[17px] text-xs font-bold text-white transition-colors hover:bg-[var(--blue)] max-[560px]:min-h-9 max-[560px]:gap-1.5 max-[560px]:px-2.5 max-[560px]:text-[11px]" to="/conta"><FiLogIn aria-hidden="true" />Entrar</Link>}
     </div>
   </header>
 );

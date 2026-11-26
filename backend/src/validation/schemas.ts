@@ -7,6 +7,49 @@ const requiredText = (label: string, max: number) =>
   Joi.string().trim().min(1).max(max).required().label(label);
 
 const uuid = (label: string) => Joi.string().guid().required().label(label);
+const publicStorageImage = (bucket: string, label: string, maxLength = 2000) =>
+  Joi.string()
+    .uri({ scheme: ["http", "https"] })
+    .max(maxLength)
+    .custom((value, helpers) => {
+      try {
+        const supabaseUrl = process.env.SUPABASE_URL;
+        if (!supabaseUrl) return helpers.error("string.imageOrigin");
+
+        const baseUrl = new URL(supabaseUrl);
+        const imageUrl = new URL(value);
+        const basePath = baseUrl.pathname.replace(/\/+$/, "");
+        const bucketPath = `${basePath}/storage/v1/object/public/${bucket}/`;
+        if (
+          imageUrl.origin !== baseUrl.origin ||
+          imageUrl.username ||
+          imageUrl.password ||
+          imageUrl.search ||
+          imageUrl.hash ||
+          !imageUrl.pathname.startsWith(bucketPath) ||
+          imageUrl.pathname.length <= bucketPath.length
+        ) {
+          return helpers.error("string.imageOrigin");
+        }
+        return value;
+      } catch {
+        return helpers.error("string.imageOrigin");
+      }
+    })
+    .messages({
+      "string.imageOrigin": "{#label} deve apontar para uma imagem pública do bucket permitido."
+    })
+    .label(label);
+
+const storeLocation = (schema: Joi.ObjectSchema) =>
+  schema.custom((value, helpers) => {
+    const hasLatitude = value.latitude !== undefined && value.latitude !== null && value.latitude !== "";
+    const hasLongitude = value.longitude !== undefined && value.longitude !== null && value.longitude !== "";
+    return hasLatitude === hasLongitude ? value : helpers.error("object.coordinatePair");
+  }).messages({
+    "object.coordinatePair": "A latitude e a longitude devem ser indicadas em conjunto."
+  });
+
 const price = (label: string, minimum = 0, maximum = 9_999_999_999.99) => {
   const schema = Joi.number().max(maximum).required().label(label);
   return minimum > 0 ? schema.greater(minimum) : schema.min(minimum);
@@ -43,7 +86,7 @@ export const validationMessages = {
 
 // Listas oficiais permitidas para validação múltipla
 export const requestSchemas = {
-  registerStore: Joi.object({
+  registerStore: storeLocation(Joi.object({
     name: requiredText("O nome da loja", 160),
     slug: Joi.string().trim().pattern(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(180).required().label("O identificador da loja"),
     category: Joi.array()
@@ -62,14 +105,14 @@ export const requestSchemas = {
       "number.min": "A longitude está fora dos limites da área de Chimoio.",
       "number.max": "A longitude está fora dos limites da área de Chimoio."
     }).label("A longitude")
-  }),
+  })),
 createProduct: Joi.object({
     name: requiredText("O nome do produto", 160),
     description: requiredText("A descrição", 4000),
     price: catalogPrice("O preço"),
     category: Joi.string().valid(...STORE_CATEGORIES).required().label("A categoria"),
     variants: Joi.array().default([]).label("As variantes"),
-    images: Joi.array().items(Joi.string().max(2000).label("O endereço da imagem")).max(12).default([]).label("As imagens").required().messages({
+    images: Joi.array().items(publicStorageImage("products", "O endereço da imagem")).max(12).default([]).label("As imagens").required().messages({
       "array.max": "Não pode enviar mais de {#limit} imagens.",
       "array.base": "As imagens devem ser enviadas como uma lista.",
       "array.required": "As imagens devem ser enviadas como uma lista."
@@ -125,7 +168,7 @@ createProduct: Joi.object({
     targetId: uuid("O destino da avaliação"),
     rating: Joi.number().integer().min(1).max(5).required().label("A classificação"),
     comment: Joi.string().max(1000).allow("").default("").label("O comentário"),
-    imageUrl: Joi.string().uri().max(2000).allow(null, "").optional().label("A fotografia da avaliação")
+    imageUrl: publicStorageImage("review-images", "A fotografia da avaliação").allow(null, "").optional()
   }),
   createNegotiation: Joi.object({
     serviceId: uuid("O serviço")
@@ -187,7 +230,7 @@ createProduct: Joi.object({
     id: uuid("O identificador da negociação"),
     messageId: uuid("O identificador da proposta")
   }),
-  updateStore: Joi.object({
+  updateStore: storeLocation(Joi.object({
     name: requiredText("O nome da loja", 160),
     slug: Joi.string().trim().pattern(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(180).required().label("O identificador da loja"),
     category: Joi.array()
@@ -200,15 +243,15 @@ createProduct: Joi.object({
     neighborhood: Joi.string().trim().allow("").optional().label("O bairro"),
     latitude: Joi.number().min(-19.35).max(-18.85).allow(null, "").optional().label("A latitude"),
     longitude: Joi.number().min(33.20).max(33.80).allow(null, "").optional().label("A longitude"),
-    logoUrl: Joi.string().max(1000).allow(null, "").optional().label("O logótipo da loja")
-  }),
+    logoUrl: publicStorageImage("store-logos", "O logótipo da loja", 1000).allow(null, "").optional()
+  })),
 
   updateProduct: Joi.object({
     name: requiredText("O nome do produto", 160),
     description: requiredText("A descrição", 4000),
     price: catalogPrice("O preço"),
     category: Joi.string().valid(...STORE_CATEGORIES).required().label("A categoria"),
-    images: Joi.array().items(Joi.string().max(2000).label("O endereço da imagem")).max(12).default([]).label("As imagens").required(),
+    images: Joi.array().items(publicStorageImage("products", "O endereço da imagem")).max(12).default([]).label("As imagens").required(),
     minOrderQty: Joi.number().integer().min(1).max(100_000).default(1).label("A quantidade mínima")
   }),
   

@@ -1,9 +1,13 @@
 import express from "express";
 import request from "supertest";
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 import { validateRequest } from "../middleware/validateRequest.js";
 import { requestSchemas } from "./schemas.js";
 import { sendSuccess } from "../http/responses.js";
+
+const originalSupabaseUrl = process.env.SUPABASE_URL;
+const testSupabaseUrl = "https://project.supabase.co";
+process.env.SUPABASE_URL = testSupabaseUrl;
 
 const app = express();
 app.use(express.json());
@@ -21,6 +25,11 @@ app.patch(
 );
 app.post("/services", validateRequest(requestSchemas.publishService), (req, res) => res.json(req.body));
 app.patch("/profile", validateRequest(requestSchemas.updateProfile), (req, res) => res.json(req.body));
+
+afterAll(() => {
+  if (originalSupabaseUrl === undefined) delete process.env.SUPABASE_URL;
+  else process.env.SUPABASE_URL = originalSupabaseUrl;
+});
 
 describe("validação Joi", () => {
   it("converte números recebidos como texto e aplica valores padrão", async () => {
@@ -140,5 +149,78 @@ describe("validação Joi", () => {
     });
 
     expect(response.status).toBe(400);
+  });
+
+  it("aceita imagens de produto apenas do bucket público de produtos", () => {
+    const product = {
+      name: "Arroz",
+      description: "Arroz local",
+      price: 250,
+      category: "Alimentação & Bebidas",
+      images: [`${testSupabaseUrl}/storage/v1/object/public/products/user/product-images/item.jpg`]
+    };
+
+    expect(requestSchemas.createProduct.validate(product).error).toBeUndefined();
+    expect(requestSchemas.updateProduct.validate({
+      ...product,
+      minOrderQty: 1
+    }).error).toBeUndefined();
+    expect(requestSchemas.createProduct.validate({
+      ...product,
+      images: ["https://external.example/item.jpg"]
+    }).error).toBeDefined();
+    expect(requestSchemas.updateProduct.validate({
+      ...product,
+      images: [`${testSupabaseUrl}/storage/v1/object/public/review-images/user/item.jpg`],
+      minOrderQty: 1
+    }).error).toBeDefined();
+  });
+
+  it("aceita logótipos apenas do bucket público de lojas", () => {
+    const store = {
+      name: "Loja Central",
+      slug: "loja-central",
+      category: ["Alimentação & Bebidas"],
+      description: "Produtos locais",
+      address: "Centro de Chimoio",
+      logoUrl: `${testSupabaseUrl}/storage/v1/object/public/store-logos/user/logo.jpg`
+    };
+
+    expect(requestSchemas.updateStore.validate(store).error).toBeUndefined();
+    expect(requestSchemas.updateStore.validate({
+      ...store,
+      logoUrl: "https://external.example/logo.jpg"
+    }).error).toBeDefined();
+  });
+
+  it("exige fotografias de avaliação no bucket público de avaliações", () => {
+    const review = {
+      targetType: "store",
+      targetId: "00000000-0000-4000-8000-000000000001",
+      rating: 5,
+      imageUrl: `${testSupabaseUrl}/storage/v1/object/public/review-images/user/review.jpg`
+    };
+
+    expect(requestSchemas.createReview.validate(review).error).toBeUndefined();
+    expect(requestSchemas.createReview.validate({
+      ...review,
+      imageUrl: "https://external.example/review.jpg"
+    }).error).toBeDefined();
+  });
+
+  it("exige latitude e longitude juntas no registo e edição da loja", () => {
+    const store = {
+      name: "Loja Central",
+      slug: "loja-central",
+      category: ["Alimentação & Bebidas"],
+      description: "Produtos locais",
+      address: "Centro de Chimoio"
+    };
+
+    expect(requestSchemas.registerStore.validate({ ...store, latitude: -19.1 }).error).toBeDefined();
+    expect(requestSchemas.registerStore.validate({ ...store, latitude: -19.1, longitude: 33.48 }).error).toBeUndefined();
+    expect(requestSchemas.registerStore.validate(store).error).toBeUndefined();
+    expect(requestSchemas.updateStore.validate({ ...store, longitude: 33.48 }).error).toBeDefined();
+    expect(requestSchemas.updateStore.validate({ ...store, latitude: -19.1, longitude: 33.48 }).error).toBeUndefined();
   });
 });

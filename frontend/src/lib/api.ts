@@ -1,5 +1,6 @@
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
+import { createUuid } from "./uuid";
 import { loadAllMapStores } from "./mapStores";
 import type {
   Catalog,
@@ -108,7 +109,7 @@ export async function createReview(session: Session, submission: ReviewSubmissio
       throw new Error("A fotografia deve ser JPEG, PNG ou WebP e ter até 5 MB.");
     }
 
-    imagePath = `${session.user.id}/reviews/${crypto.randomUUID()}.${extension}`;
+    imagePath = `${session.user.id}/reviews/${createUuid()}.${extension}`;
     const { error: uploadError } = await supabase.storage
       .from("review-images")
       .upload(imagePath, image, { cacheControl: "3600", contentType: image.type, upsert: false });
