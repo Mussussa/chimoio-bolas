@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { FiUser } from "react-icons/fi";
 import type { MapStore, Product, Profile, ProviderReview, Service, ServiceProvider, Store } from "../../lib/types";
 import type { ReviewPayload } from "../../lib/api";
 import { providerServiceHref, storeProductHref } from "../../lib/publicLinks";
@@ -235,9 +236,15 @@ export default function Marketplace({
                   </p>
                   {reviews.slice(0, 2).map((review, index) => (
                     review.comment.trim() && (
-                      <blockquote className="my-2 rounded-r-md border-l-[3px] border-[var(--yellow)] bg-[var(--yellow-soft)] px-3 py-[9px] text-xs leading-[1.5] text-[#605d50]" key={`${review.target_id}-${review.created_at}-${index}`}>
-                        “{review.comment}”
-                      </blockquote>
+                      <figure className="my-2 flex items-start gap-2.5 rounded-r-md border-l-[3px] border-[var(--yellow)] bg-[var(--yellow-soft)] px-3 py-[9px]" key={`${review.target_id}-${review.created_at}-${index}`}>
+                        {review.reviewer_avatar_url
+                          ? <img className="h-8 w-8 flex-none rounded-full bg-white object-cover" src={review.reviewer_avatar_url} alt="" />
+                          : <span className="grid h-8 w-8 flex-none place-items-center rounded-full bg-white text-[var(--blue)]" aria-hidden="true"><FiUser /></span>}
+                        <figcaption className="min-w-0 text-xs leading-[1.5] text-[#605d50]">
+                          {review.reviewer_name && <b className="mb-0.5 block text-[11px] text-[var(--navy)]">{review.reviewer_name}</b>}
+                          “{review.comment}”
+                        </figcaption>
+                      </figure>
                     )
                   ))}
                   {profile?.role === "client" && (

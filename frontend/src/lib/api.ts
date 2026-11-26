@@ -45,7 +45,7 @@ export async function loadCatalog(): Promise<Catalog> {
     client.from("service_providers").select("*").order("created_at", { ascending: false }),
     client.from("services").select("*").eq("published", true).order("created_at", { ascending: false }),
     client.from("public_reviews")
-      .select("target_id,rating,comment,created_at")
+      .select("target_id,rating,comment,created_at,reviewer_name,reviewer_avatar_url")
       .eq("target_type", "service_provider")
       .order("created_at", { ascending: false }),
     loadAllMapStores(async (offset, limit) => {
@@ -195,6 +195,7 @@ export type PublicReview = {
   rating: number;
   comment: string;
   createdAt: string;
+  client: { name: string | null; avatarUrl: string | null } | null;
 };
 
 export type PublicStoreDetail = {

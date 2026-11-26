@@ -105,6 +105,8 @@ export type ProviderReview = {
   rating: number;
   comment: string;
   created_at: string;
+  reviewer_name: string | null;
+  reviewer_avatar_url: string | null;
 };
 
 export type Notice = { text: string; error?: boolean } | null;

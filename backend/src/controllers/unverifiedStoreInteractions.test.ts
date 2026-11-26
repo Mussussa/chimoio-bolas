@@ -41,7 +41,15 @@ describe("interacções com lojas não verificadas", () => {
 
   it("devolve avaliações de uma loja não verificada", async () => {
     vi.spyOn(Store, "findByPk").mockResolvedValue({ id: "store-id", verified: false } as never);
-    vi.spyOn(Review, "findAll").mockResolvedValue([] as never);
+    vi.spyOn(Review, "findAll").mockResolvedValue([{
+      toJSON: () => ({
+        id: "review-id",
+        rating: 5,
+        comment: "Boa loja",
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+        client: { id: "client-id", name: "Ana", avatarUrl: "/ana.jpg", email: "private@example.com" }
+      })
+    }] as never);
 
     const response = createResponse();
     const next = vi.fn();
@@ -50,6 +58,21 @@ describe("interacções com lojas não verificadas", () => {
     } as unknown as Request, response as unknown as Response, next);
 
     expect(Store.findByPk).toHaveBeenCalledWith("store-id", { attributes: ["id"] });
+    expect(Review.findAll).toHaveBeenCalledWith(expect.objectContaining({
+      attributes: ["id", "rating", "comment", "createdAt"],
+      include: [{ model: User, as: "client", attributes: ["name", "avatarUrl"] }]
+    }));
+    expect(response.json).toHaveBeenCalledWith(expect.objectContaining({
+      data: {
+        reviews: [{
+          id: "review-id",
+          rating: 5,
+          comment: "Boa loja",
+          createdAt: new Date("2026-01-01T00:00:00.000Z"),
+          client: { name: "Ana", avatarUrl: "/ana.jpg" }
+        }]
+      }
+    }));
     expect(response.status).toHaveBeenCalledWith(200);
     expect(next).not.toHaveBeenCalled();
   });

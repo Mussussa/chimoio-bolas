@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { FiArrowUpRight, FiFileText, FiLock, FiShield } from "react-icons/fi";
+import { FiArrowUpRight, FiFileText, FiLock, FiShield, FiUser } from "react-icons/fi";
 import type { Notice, Profile } from "../../lib/types";
 
 type HeaderProps = Readonly<{
@@ -31,7 +31,24 @@ return (
       {profile && <Link className="hover:text-[var(--blue)]" to="/painel">{dashboardLabels[profile.role]}</Link>}
     </nav>
     <div className="flex items-center gap-[14px] text-xs text-[var(--muted)] max-[560px]:ml-auto">
-      {profile ? <><Link to="/conta">{profile.name}</Link><button className="inline-flex min-h-[42px] items-center justify-center gap-[9px] rounded-lg border border-[#c8d6dd] bg-white px-[17px] text-xs font-bold text-[var(--navy)]" onClick={onSignOut}>Sair</button></> : <Link className="inline-flex min-h-[42px] items-center justify-center gap-[9px] rounded-lg bg-[var(--navy)] px-[17px] text-xs font-bold text-white" to="/conta">Entrar</Link>}
+      {profile ? <>
+        <Link
+          className="inline-flex min-w-0 items-center gap-2 rounded-full p-1.5 pr-2.5 text-[var(--navy)] transition-colors hover:bg-[#f3f6f7]"
+          to="/conta"
+          aria-label={`Editar perfil de ${profile.name}`}
+          title="Editar perfil"
+        >
+          {profile.avatarUrl
+            ? <img className="h-9 w-9 flex-none rounded-full border border-[var(--line)] bg-[#eaf1f4] object-cover" src={profile.avatarUrl} alt="" />
+            : <span className="grid h-9 w-9 flex-none place-items-center rounded-full bg-[#eaf1f4] text-[var(--blue)]" aria-hidden="true">
+                {profile.name
+                  ? <b className="font-[Manrope,sans-serif] text-sm font-extrabold">{profile.name.trim().slice(0, 1).toLocaleUpperCase()}</b>
+                  : <FiUser aria-hidden="true" />}
+              </span>}
+          <span className="max-w-[150px] truncate font-bold max-[560px]:sr-only">{profile.name}</span>
+        </Link>
+        <button className="inline-flex min-h-[42px] items-center justify-center gap-[9px] rounded-lg border border-[#c8d6dd] bg-white px-[17px] text-xs font-bold text-[var(--navy)]" onClick={onSignOut}>Sair</button>
+      </> : <Link className="inline-flex min-h-[42px] items-center justify-center gap-[9px] rounded-lg bg-[var(--navy)] px-[17px] text-xs font-bold text-white" to="/conta">Entrar</Link>}
     </div>
   </header>
 );
