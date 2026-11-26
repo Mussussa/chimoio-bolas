@@ -6,6 +6,7 @@ export type ProviderProfileDraft = {
   bio: string;
   category: string[];
   basePrice: string;
+  neighborhood: string;
 };
 
 export const PROVIDER_CATEGORIES = [

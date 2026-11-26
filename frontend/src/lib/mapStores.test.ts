@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getNearbyStoreLocations, getStoreLocations, loadAllMapStores } from "./mapStores";
+import { getNearbyStoreLocations, getStoreLocations, loadAllMapStores, sortByDistance } from "./mapStores";
 import type { MapStore } from "./types";
 
 function createStore(id: string, latitude: number | string | null = -19.1164, longitude: number | string | null = 33.4833): MapStore {
@@ -71,5 +71,16 @@ describe("map stores", () => {
     ]);
 
     expect(getNearbyStoreLocations(locations, null, "")).toHaveLength(2);
+  });
+
+  it("orders items by distance and keeps items without coordinates at the end", () => {
+    const items = [
+      { id: "far", coordinates: [-19.2, 33.48] as [number, number] },
+      { id: "unknown", coordinates: null },
+      { id: "near", coordinates: [-19.12, 33.48] as [number, number] }
+    ];
+
+    expect(sortByDistance(items, (item) => item.coordinates, [-19.1164, 33.4833]).map((item) => item.id))
+      .toEqual(["near", "far", "unknown"]);
   });
 });

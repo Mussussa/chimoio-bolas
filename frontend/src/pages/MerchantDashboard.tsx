@@ -1,6 +1,8 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { Link } from "react-router-dom";
+import CategoryImage from "../components/marketplace/CategoryImage";
+import { FALLBACK_IMAGE, STORE_CATEGORY_IMAGES } from "../lib/categoryPlaceholders";
 import MerchantOverview from "../components/merchant/MerchantOverview";
 import MerchantProductList from "../components/merchant/MerchantProductList";
 import MerchantStoreForm from "../components/merchant/MerchantStoreForm";
@@ -168,29 +170,29 @@ export default function MerchantDashboard({ session, refreshKey, children }: Mer
   }
 
   return (
-    <section className="merchant-dashboard section" id="painel-lojista">
-      <header className="merchant-heading">
+    <section className="min-h-[calc(100vh-160px)] px-[clamp(20px,7vw,100px)] pt-11 pb-[70px] max-[560px]:pb-12" id="painel-lojista">
+      <header className="flex flex-col items-start justify-between gap-5 border-b border-[#e7e1ca] pb-6 min-[561px]:flex-row min-[561px]:items-center">
         <div>
-          <p className="eyebrow">ÁREA DO LOJISTA</p>
-          <h1>{store?.name ?? "Painel da loja"}</h1>
-          <p>Resumo e gestão do seu negócio num só lugar.</p>
+          <p className="mb-1 text-[10px] font-extrabold tracking-[.17em] text-[#765900]">ÁREA DO LOJISTA</p>
+          <h1 className="my-2 font-[Manrope,sans-serif] text-[32px] font-extrabold text-[#302b18] max-[560px]:text-[27px]">{store?.name ?? "Painel da loja"}</h1>
+          <p className="m-0 text-[13px] text-[#716e60]">Resumo e gestão do seu negócio num só lugar.</p>
         </div>
-        {store?.logoUrl && <img className="merchant-store-logo merchant-store-logo-large" src={store.logoUrl} alt={`Logótipo de ${store.name}`} />}
-        <span className={`merchant-status ${store?.verified ? "is-verified" : ""}`}>
+        {store && <CategoryImage className="h-[82px] w-[82px] shrink-0 rounded-lg border border-[#e7e1ca] bg-[#f5f8f9] object-cover" src={store.logoUrl} placeholder={STORE_CATEGORY_IMAGES[store.category[0]] ?? FALLBACK_IMAGE} alt={`Logótipo de ${store.name}`} />}
+        <span className={`rounded-md px-[11px] py-2 text-[11px] font-bold ${store?.verified ? "bg-[#e6f4ec] text-[#267155]" : "bg-[#fff3da] text-[#885a1c]"}`}>
           {store?.verified ? "Loja verificada" : "Loja não verificada"}
         </span>
       </header>
 
-      <nav className="merchant-tabs" aria-label="Secções do painel">
-        <button type="button" className={tab === "overview" ? "is-active" : ""} onClick={() => setTab("overview")}>Visão geral</button>
-        <button type="button" className={tab === "store" ? "is-active" : ""} onClick={() => setTab("store")}>Dados da loja</button>
-        <button type="button" className={tab === "products" ? "is-active" : ""} onClick={() => setTab("products")}>Produtos</button>
-        <Link className="messages-dashboard-tab" to="/mensagens">Mensagens</Link>
+      <nav className="my-5 mb-6 flex gap-6 overflow-x-auto border-b border-[#e7e1ca] max-[560px]:gap-[15px]" aria-label="Secções do painel">
+        <button type="button" className={`shrink-0 border-0 border-b-2 border-transparent bg-transparent px-0.5 pb-3 text-[13px] font-bold max-[560px]:text-xs ${tab === "overview" ? "border-b-[#765900] text-[#765900]" : "text-[#716e60]"}`} onClick={() => setTab("overview")}>Visão geral</button>
+        <button type="button" className={`shrink-0 border-0 border-b-2 border-transparent bg-transparent px-0.5 pb-3 text-[13px] font-bold max-[560px]:text-xs ${tab === "store" ? "border-b-[#765900] text-[#765900]" : "text-[#716e60]"}`} onClick={() => setTab("store")}>Dados da loja</button>
+        <button type="button" className={`shrink-0 border-0 border-b-2 border-transparent bg-transparent px-0.5 pb-3 text-[13px] font-bold max-[560px]:text-xs ${tab === "products" ? "border-b-[#765900] text-[#765900]" : "text-[#716e60]"}`} onClick={() => setTab("products")}>Produtos</button>
+        <Link className="ml-auto shrink-0 border-b-2 border-transparent px-0.5 pb-3 text-[13px] font-bold text-[#765900] hover:border-b-[#9abbd0] max-[560px]:text-xs" to="/mensagens">Mensagens</Link>
       </nav>
 
-      {error && <p className="merchant-feedback is-error" role="alert">{error}</p>}
-      {message && <output className="merchant-feedback">{message}</output>}
-      {loading && <output className="merchant-loading">A carregar os dados da loja...</output>}
+      {error && <p className="my-[14px] block rounded-md bg-[#fff0ec] px-[14px] py-3 text-[13px] text-[#9e3b2e]" role="alert">{error}</p>}
+      {message && <output className="my-[14px] block rounded-md bg-[#eaf5ef] px-[14px] py-3 text-[13px] text-[#267155]">{message}</output>}
+      {loading && <output className="my-[14px] block rounded-md bg-[#eaf5ef] px-[14px] py-3 text-[13px] text-[#267155]">A carregar os dados da loja...</output>}
 
       {!loading && store && tab === "overview" && (
         <MerchantOverview

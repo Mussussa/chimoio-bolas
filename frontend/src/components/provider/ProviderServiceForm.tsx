@@ -76,12 +76,12 @@ export default function ProviderServiceForm({
   }
 
   return (
-    <form className="provider-panel provider-service-form" onSubmit={submit}>
-      <header className="provider-panel-heading">
-        <div><p className="eyebrow">{initialService ? "EDITAR PUBLICAÇÃO" : "NOVA PUBLICAÇÃO"}</p><h2>{initialService ? "Atualize o serviço" : "Divulgue um serviço"}</h2></div>
-        {initialService && <button type="button" className="link-button" onClick={onCancelEdit}>Cancelar edição</button>}
+    <form className="grid gap-4 min-w-0 rounded-lg border border-[var(--line)] bg-white p-[17px]" onSubmit={submit}>
+      <header className="mb-0 flex items-center justify-between gap-[14px]">
+        <div><p className="mb-[6px] text-[10px] font-extrabold tracking-[.17em] text-[var(--green)]">{initialService ? "EDITAR PUBLICAÇÃO" : "NOVA PUBLICAÇÃO"}</p><h2 className="m-0 font-[Manrope,sans-serif] text-lg font-bold text-[var(--navy)]">{initialService ? "Atualize o serviço" : "Divulgue um serviço"}</h2></div>
+        {initialService && <button type="button" className="border-0 bg-transparent font-bold text-[var(--blue)]" onClick={onCancelEdit}>Cancelar edição</button>}
       </header>
-      <div className="form-grid">
+      <div className="grid grid-cols-1 gap-[14px] min-[851px]:grid-cols-2 [&>label]:grid [&>label]:gap-[7px] [&>label]:text-[11px] [&>label]:font-bold [&>label]:text-[#506472] [&_small]:text-[11px] [&_small]:font-normal [&_small]:text-[var(--muted)]">
         <label>Título do serviço<input required maxLength={180} value={draft.title} onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))} placeholder="Ex.: Instalação elétrica residencial" /></label>
         <label>Categoria<select required value={draft.category} onChange={(event) => setDraft((current) => ({ ...current, category: event.target.value }))}>
           <option value="">Escolher área de atuação</option>
@@ -89,23 +89,23 @@ export default function ProviderServiceForm({
         </select></label>
         <label>Preço (MT)<input required type="number" min="0" step="0.01" value={draft.price} onChange={(event) => setDraft((current) => ({ ...current, price: event.target.value }))} /></label>
         <label>Prazo de execução<input required maxLength={100} value={draft.deliveryTime} onChange={(event) => setDraft((current) => ({ ...current, deliveryTime: event.target.value }))} placeholder="Ex.: 1 dia" /></label>
-        <label className="wide">Descrição<textarea required maxLength={5000} value={draft.description} onChange={(event) => setDraft((current) => ({ ...current, description: event.target.value }))} /></label>
-        <label className="wide">Fotografias do serviço<input type="file" multiple accept="image/jpeg,image/png,image/webp" onChange={choosePhotos} /><small>Até 8 imagens, 5 MB cada. JPEG, PNG ou WebP.</small></label>
+        <label className="col-span-full max-[850px]:col-auto">Descrição<textarea required maxLength={5000} value={draft.description} onChange={(event) => setDraft((current) => ({ ...current, description: event.target.value }))} /></label>
+        <label className="col-span-full max-[850px]:col-auto">Fotografias do serviço<input type="file" multiple accept="image/jpeg,image/png,image/webp" onChange={choosePhotos} /><small>Até 8 imagens, 5 MB cada. JPEG, PNG ou WebP.</small></label>
       </div>
       {(currentPhotos.length > 0 || previews.length > 0) && (
-        <div className="provider-photo-grid" aria-label="Imagens do serviço">
-          {currentPhotos.map((url, index) => <figure key={url}>
-            <img src={url} alt={`Imagem ${index + 1} do serviço`} />
-            <button type="button" aria-label="Remover imagem" onClick={() => setCurrentPhotos((photos) => photos.filter((photo) => photo !== url))}>×</button>
+        <div className="grid grid-cols-3 gap-2" aria-label="Imagens do serviço">
+          {currentPhotos.map((url, index) => <figure className="relative m-0 aspect-square overflow-hidden rounded-md bg-[#eef2f4]" key={url}>
+            <img className="h-full w-full object-cover" src={url} alt={`Imagem ${index + 1} do serviço`} />
+            <button className="absolute right-[5px] top-[5px] h-[26px] w-[26px] rounded-full border-0 bg-[#172b3bcc] text-lg leading-none text-white" type="button" aria-label="Remover imagem" onClick={() => setCurrentPhotos((photos) => photos.filter((photo) => photo !== url))}>×</button>
           </figure>)}
-          {previews.map((url, index) => <figure key={url}>
-            <img src={url} alt={`Nova imagem ${index + 1}`} />
-            <button type="button" aria-label="Remover imagem" onClick={() => setNewPhotos((photos) => photos.filter((_, photoIndex) => photoIndex !== index))}>×</button>
+          {previews.map((url, index) => <figure className="relative m-0 aspect-square overflow-hidden rounded-md bg-[#eef2f4]" key={url}>
+            <img className="h-full w-full object-cover" src={url} alt={`Nova imagem ${index + 1}`} />
+            <button className="absolute right-[5px] top-[5px] h-[26px] w-[26px] rounded-full border-0 bg-[#172b3bcc] text-lg leading-none text-white" type="button" aria-label="Remover imagem" onClick={() => setNewPhotos((photos) => photos.filter((_, photoIndex) => photoIndex !== index))}>×</button>
           </figure>)}
         </div>
       )}
-      {photoError && <p className="provider-inline-error" role="alert">{photoError}</p>}
-      <button className="button button-dark" type="submit" disabled={saving || categories.length === 0}>
+      {photoError && <p className="m-0 rounded-md bg-[#fff0ec] px-[11px] py-[9px] text-xs text-[#9e3b2e]" role="alert">{photoError}</p>}
+      <button className="inline-flex min-h-[42px] items-center justify-center gap-[9px] justify-self-start rounded-lg bg-[var(--navy)] px-[17px] text-xs font-bold text-white disabled:cursor-wait disabled:opacity-[.56]" type="submit" disabled={saving || categories.length === 0}>
         {getSubmitLabel()}
       </button>
     </form>

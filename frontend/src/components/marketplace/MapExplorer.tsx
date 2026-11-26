@@ -12,10 +12,16 @@ type Props = {
   error: string | null;
   onLocate?: () => void;
   onClearLocation?: () => void;
+  entityLabel?: string;
+  categoryLabel?: string;
+  popupLinkLabel?: string;
+  emptyMessage?: string;
+  verificationLabels?: { verified: string; unverified: string };
 };
 
 const chimoio: [number, number] = [-19.1164, 33.4833];
 const MAP_RADIUS_KM = 3;
+const MIN_LOCATION_ZOOM = 15;
 
 function FitMapToLocations({ locations, center }: { locations: StoreLocation[]; center: MapCenter | null }) {
   const map = useMap();
@@ -28,6 +34,9 @@ function FitMapToLocations({ locations, center }: { locations: StoreLocation[]; 
         [center[0] - latitudeDelta, center[1] - longitudeDelta],
         [center[0] + latitudeDelta, center[1] + longitudeDelta]
       ], { padding: [24, 24], maxZoom: 16 });
+      if (map.getZoom() < MIN_LOCATION_ZOOM) {
+        map.setZoom(MIN_LOCATION_ZOOM);
+      }
       return;
     }
 
@@ -65,7 +74,19 @@ function directionsUrl(store: MapStore & { latitude: number; longitude: number }
   return `https://www.google.com/maps/dir/?${params.toString()}`;
 }
 
-export default function MapExplorer({ stores, gps, loading, error, onLocate, onClearLocation }: Props) {
+export default function MapExplorer({
+  stores,
+  gps,
+  loading,
+  error,
+  onLocate,
+  onClearLocation,
+  entityLabel = "lojas",
+  categoryLabel = "Categoria da loja",
+  popupLinkLabel = "Ver loja e produtos",
+  emptyMessage = "Ainda não há lojas com coordenadas para mostrar. As lojas aparecerão aqui quando tiverem uma localização registada.",
+  verificationLabels = { verified: "Verificada", unverified: "Não verificada" }
+}: Props) {
   const [selectedNeighborhood, setSelectedNeighborhood] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const allLocations = useMemo(() => getStoreLocations(stores), [stores]);
@@ -87,9 +108,9 @@ export default function MapExplorer({ stores, gps, loading, error, onLocate, onC
 
   return (
     <>
-      <div className="map-filters">
+      <div className="mb-[14px] grid grid-cols-1 items-end gap-[10px] min-[561px]:grid-cols-2 min-[851px]:grid-cols-[repeat(2,minmax(180px,1fr))_auto_auto]">
         <label>
-          <span>Filtrar por bairro</span>
+          <span className="mb-[7px] block text-[11px] font-bold text-[#506472]">Filtrar por bairro</span>
           <select value={selectedNeighborhood} onChange={(event) => setSelectedNeighborhood(event.target.value)}>
             <option value="">Todos os bairros</option>
             {CHIMOIO_NEIGHBORHOODS.map((item) => (
@@ -98,18 +119,18 @@ export default function MapExplorer({ stores, gps, loading, error, onLocate, onC
           </select>
         </label>
         <label>
-          <span>Categoria da loja</span>
+          <span className="mb-[7px] block text-[11px] font-bold text-[#506472]">{categoryLabel}</span>
           <select value={selectedCategory} onChange={(event) => setSelectedCategory(event.target.value)}>
             <option value="">Todas as categorias</option>
             {categories.map((category) => <option key={category} value={category}>{category}</option>)}
           </select>
         </label>
         {onLocate && (
-          <button className="button button-outline" type="button" onClick={onLocate}>Usar a minha localização</button>
+          <button className="inline-flex min-h-[42px] items-center justify-center gap-[9px] rounded-lg border border-[#c8d6dd] bg-white px-[17px] text-xs font-bold text-[var(--navy)]" type="button" onClick={onLocate}>Usar a minha localização</button>
         )}
         {(gps || selectedNeighborhood) && (
           <button
-            className="button button-outline"
+            className="inline-flex min-h-[42px] items-center justify-center gap-[9px] rounded-lg border border-[#c8d6dd] bg-white px-[17px] text-xs font-bold text-[var(--navy)]"
             type="button"
             onClick={() => { setSelectedNeighborhood(""); onClearLocation?.(); }}
           >
@@ -117,16 +138,16 @@ export default function MapExplorer({ stores, gps, loading, error, onLocate, onC
           </button>
         )}
       </div>
-      <p className="map-summary" role="status">
+      <p className="m-0 text-xs text-[var(--muted)]" role="status">
         {loading && stores.length === 0
-          ? "A carregar lojas do mapa…"
+          ? `A carregar ${entityLabel} do mapa…`
           : center
-            ? `${locations.reduce((total, location) => total + location.stores.length, 0)} lojas num raio de ${MAP_RADIUS_KM} km`
-            : `${locations.reduce((total, location) => total + location.stores.length, 0)} lojas com localização no mapa`}
+            ? `${locations.reduce((total, location) => total + location.stores.length, 0)} ${entityLabel} num raio de ${MAP_RADIUS_KM} km`
+            : `${locations.reduce((total, location) => total + location.stores.length, 0)} ${entityLabel} com localização no mapa`}
         {missingCoordinates > 0 && ` · ${missingCoordinates} sem coordenadas`}
       </p>
-      <div className="map-frame" aria-label="Mapa de lojas de Chimoio">
-        <MapContainer center={chimoio} zoom={13} scrollWheelZoom className="leaflet-map">
+      <div className="my-[10px] mb-3 h-[360px] overflow-hidden rounded-xl border border-[var(--line)] bg-[#e6edf0]" aria-label={`Mapa de ${entityLabel} de Chimoio`}>
+        <MapContainer center={chimoio} zoom={13} scrollWheelZoom className="!h-full !w-full">
           <FitMapToLocations locations={locations} center={center} />
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -148,15 +169,15 @@ export default function MapExplorer({ stores, gps, loading, error, onLocate, onC
               pathOptions={{ color: "#fff", fillColor: location.stores.some((store) => store.verified) ? "#d8a900" : "#9e9e9e", fillOpacity: 1 }}
             >
               <Popup>
-                <div className="map-popup">
+                <div className="grid min-w-[180px] gap-3">
                   {location.stores.map((store) => (
-                    <article key={store.id} className="map-popup-store">
-                      <b>{store.name}</b>
-                      <span>{store.verified ? "Verificada" : "Não verificada"}</span>
-                      <span className="map-popup-category">{parseCategories(store.category).join(" · ")}</span>
-                      <span>{store.address}</span>
-                      <Link to={`/lojas/${store.id}`}>Ver loja e produtos</Link>
-                      <a href={directionsUrl(store, gps)} target="_blank" rel="noreferrer">
+                    <article key={store.id} className="grid gap-[5px]">
+                      <b className="text-[13px] text-[var(--navy)]">{store.name}</b>
+                      <span className="text-[11px] text-[var(--muted)]">{store.verified ? verificationLabels.verified : verificationLabels.unverified}</span>
+                      <span className="text-[11px] font-semibold text-[var(--blue)]">{parseCategories(store.category).join(" · ")}</span>
+                      <span className="text-xs text-[var(--muted)]">{store.address}</span>
+                      <Link className="text-xs font-bold text-[var(--blue)]" to={store.href ?? `/lojas/${store.id}`}>{popupLinkLabel}</Link>
+                      <a className="text-xs font-bold text-[var(--blue)]" href={directionsUrl(store, gps)} target="_blank" rel="noreferrer">
                         Abrir rota no Google Maps
                       </a>
                     </article>
@@ -167,12 +188,12 @@ export default function MapExplorer({ stores, gps, loading, error, onLocate, onC
           ))}
         </MapContainer>
       </div>
-      {error && <p className="map-empty" role="alert">{error}</p>}
+      {error && <p className="mb-6 rounded-[7px] bg-[#f5f9fb] p-3 text-xs text-[var(--muted)]" role="alert">{error}</p>}
       {!loading && !error && locations.length === 0 && (
-        <p className="map-empty">
+        <p className="mb-6 rounded-[7px] bg-[#f5f9fb] p-3 text-xs text-[var(--muted)]">
           {center
-            ? `Não há lojas com coordenadas num raio de ${MAP_RADIUS_KM} km desta localização.`
-            : "Ainda não há lojas com coordenadas para mostrar. As lojas aparecerão aqui quando tiverem uma localização registada."}
+            ? `Não há ${entityLabel} com coordenadas num raio de ${MAP_RADIUS_KM} km desta localização.`
+            : emptyMessage}
         </p>
       )}
     </>

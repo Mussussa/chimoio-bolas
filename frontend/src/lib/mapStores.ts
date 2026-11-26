@@ -77,6 +77,28 @@ export function distanceInKm(latitude1: number, longitude1: number, latitude2: n
   return 6371 * 2 * Math.atan2(Math.sqrt(arc), Math.sqrt(1 - arc));
 }
 
+export function sortByDistance<T>(
+  items: T[],
+  getCoordinates: (item: T) => MapCenter | null,
+  center: MapCenter | null
+): T[] {
+  if (!center) return items;
+
+  return items
+    .map((item, index) => {
+      const coordinates = getCoordinates(item);
+      return {
+        item,
+        index,
+        distance: coordinates
+          ? distanceInKm(center[0], center[1], coordinates[0], coordinates[1])
+          : Number.POSITIVE_INFINITY
+      };
+    })
+    .sort((first, second) => first.distance - second.distance || first.index - second.index)
+    .map(({ item }) => item);
+}
+
 function parseStoreCategories(category: string | string[]): string[] {
   if (Array.isArray(category)) return category;
   return category

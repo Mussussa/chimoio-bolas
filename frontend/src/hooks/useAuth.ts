@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, type Dispatch, type FormEvent, type S
 import type { Session } from "@supabase/supabase-js";
 import { loadProfile, updateProfile as updateProfileRequest } from "../lib/api";
 import { supabase } from "../lib/supabase";
-import type { AuthForm, Notice, Profile } from "../lib/types";
+import type { AuthForm, Notice, Profile, ProfileUpdate } from "../lib/types";
 
 type UseAuthOptions = {
   setNotice: Dispatch<SetStateAction<Notice>>;
@@ -73,11 +73,31 @@ export default function useAuth({ setNotice, setBusy }: UseAuthOptions) {
     if (result?.error) setNotice({ text: result.error.message, error: true });
   }, [setNotice]);
 
-  const updateAccountProfile = useCallback(async (values: { name: string; phone: string | null }) => {
+  const updateAccountProfile = useCallback(async (values: ProfileUpdate, avatarFile: File | null) => {
     if (!session) return;
     setProfileSaving(true);
     try {
-      const updated = await updateProfileRequest(session, values);
+      let avatarUrl = values.avatarUrl;
+      if (avatarFile) {
+        if (!supabase) throw new Error("O serviço de fotografias está temporariamente indisponível.");
+        const extensionByType: Record<string, string> = {
+          "image/jpeg": "jpg",
+          "image/png": "png",
+          "image/webp": "webp"
+        };
+        const extension = extensionByType[avatarFile.type];
+        if (!extension || avatarFile.size > 5 * 1024 * 1024) {
+          throw new Error("A fotografia deve ser JPEG, PNG ou WebP e ter até 5 MB.");
+        }
+        const filePath = `${session.user.id}/profile/${crypto.randomUUID()}.${extension}`;
+        const { error: uploadError } = await supabase.storage
+          .from("provider-media")
+          .upload(filePath, avatarFile, { cacheControl: "3600", contentType: avatarFile.type, upsert: false });
+        if (uploadError) throw uploadError;
+        avatarUrl = supabase.storage.from("provider-media").getPublicUrl(filePath).data.publicUrl;
+      }
+
+      const updated = await updateProfileRequest(session, { ...values, avatarUrl });
       setProfile((current) => current ? { ...current, ...updated } : current);
       setNotice({ text: "Os dados da conta foram atualizados." });
     } catch (error) {

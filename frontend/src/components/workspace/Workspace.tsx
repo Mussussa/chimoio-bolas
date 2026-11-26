@@ -15,7 +15,7 @@ type WorkspaceProps = Readonly<{
   onRegisterProvider: (event: FormEvent<HTMLFormElement>, provider: ProviderForm) => Promise<boolean>;
 }>;
 
-const initialProviderForm: ProviderForm = { category: [], bio: "", basePrice: "" };
+const initialProviderForm: ProviderForm = { category: [], bio: "", basePrice: "", neighborhood: "" };
 const initialStoreForm: StoreForm & { neighborhood?: string } = {
   name: "",
   slug: "",
@@ -84,6 +84,10 @@ export default function Workspace({
       latitude: found ? found.latitude.toFixed(6) : current.latitude,
       longitude: found ? found.longitude.toFixed(6) : current.longitude
     }));
+  };
+
+  const handleProviderNeighborhoodChange = (neighborhood: string) => {
+    setProviderForm((current) => ({ ...current, neighborhood }));
   };
 
   const handleGetLocation = () => {
@@ -164,20 +168,20 @@ export default function Workspace({
   };
 
   return (
-    <section className="section workspace">
+    <section className="px-[clamp(20px,7vw,100px)] py-12">
       {profile.role === "client" && (
-        <div className="panel">
-          <div className="section-head">
+        <div className="rounded-xl border border-[var(--line)] bg-white p-6">
+          <div className="mb-[26px] flex items-end justify-between gap-[22px] max-[700px]:flex-col">
             <div>
-              <p className="eyebrow">ABRIR NEGÓCIO (PLANO 2: PRODUTOS)</p>
-              <h2>Registar loja local em Chimoio</h2>
+              <p className="text-[10px] font-extrabold tracking-[.17em] text-[var(--blue)]">ABRIR NEGÓCIO (PLANO 2: PRODUTOS)</p>
+              <h2 className="my-2 mt-[9px] font-[Manrope,sans-serif] text-[clamp(24px,3vw,34px)] font-extrabold tracking-[-.04em]">Registar loja local em Chimoio</h2>
             </div>
           </div>
-          <form className="form-grid" onSubmit={(event) => void onRegisterStore(event, storeForm)}>
+          <form className="grid grid-cols-1 gap-[14px] min-[851px]:grid-cols-2 [&>label]:grid [&>label]:gap-[7px] [&>label]:text-[11px] [&>label]:font-bold [&>label]:text-[#506472]" onSubmit={(event) => void onRegisterStore(event, storeForm)}>
             {/* O slug é gerado e enviado automaticamente em segundo plano */}
             <input type="hidden" value={storeForm.slug} />
 
-            <label className="wide">
+            <label className="col-span-full max-[850px]:col-auto">
               Nome da loja ou negócio
               <input 
                 required 
@@ -195,11 +199,11 @@ export default function Workspace({
               />
             </label>
 
-            <div className="wide">
-              <p className="form-group-label">Categorias de Produtos da Loja (Pode selecionar várias):</p>
-              <div className="checkbox-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "10px", marginTop: "8px" }}>
+            <div className="col-span-full max-[850px]:col-auto">
+              <p className="mb-2 text-[11px] font-bold text-[#506472]">Categorias de Produtos da Loja (Pode selecionar várias):</p>
+              <div className="mt-2 grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-[10px]">
                 {STORE_CATEGORIES.map((cat) => (
-                  <label key={cat} className="checkbox-item" style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                  <label key={cat} className="flex cursor-pointer items-center gap-2 text-xs text-[#506472]">
                     <input 
                       type="checkbox"
                       checked={Array.isArray(storeForm.category) && storeForm.category.includes(cat)}
@@ -235,14 +239,14 @@ export default function Workspace({
               />
             </label>
 
-            <div className="wide geo-note">
+            <div className="col-span-full rounded-[7px] bg-[#eaf5ef] p-[10px_12px] text-xs text-[#2e715d] max-[850px]:col-auto">
               <p>📍 <b>Localização por GPS (Opcional):</b> Ativar o GPS ajuda os clientes de Chimoio a encontrarem a rota exata até à sua porta com maior precisão no mapa.</p>
-              <button type="button" className="button button-outline" onClick={handleGetLocation}>
+              <button type="button" className="border-0 bg-transparent font-bold text-[var(--blue)]" onClick={handleGetLocation}>
                 {gpsEnabled ? "✅ GPS Ativado e Coordenadas Preenchidas" : "Ativar minha localização GPS atual"}
               </button>
             </div>
 
-            <label className="wide">
+            <label className="col-span-full max-[850px]:col-auto">
               Descrição da loja
               <textarea 
                 required 
@@ -253,21 +257,21 @@ export default function Workspace({
               />
             </label>
 
-            <button className="button button-dark" type="submit" disabled={busy}>Registar e abrir loja</button>
+            <button className="inline-flex min-h-[42px] items-center justify-center gap-[9px] justify-self-start rounded-lg bg-[var(--navy)] px-[17px] text-xs font-bold text-white disabled:cursor-wait disabled:opacity-[.56]" type="submit" disabled={busy}>Registar e abrir loja</button>
           </form>
         </div>
       )}
 
       {profile.role === "lojista" && (
-        <div className="panel">
-          <div className="section-head">
+        <div className="rounded-xl border border-[var(--line)] bg-white p-6">
+          <div className="mb-[26px] flex items-end justify-between gap-[22px] max-[700px]:flex-col">
             <div>
-              <p className="eyebrow">GESTÃO DE PRODUTOS</p>
-              <h2>Adicionar novo produto</h2>
-              <p>Os preços são guardados com segurança em Meticais (MT).</p>
+              <p className="text-[10px] font-extrabold tracking-[.17em] text-[var(--blue)]">GESTÃO DE PRODUTOS</p>
+              <h2 className="my-2 mt-[9px] font-[Manrope,sans-serif] text-[clamp(24px,3vw,34px)] font-extrabold tracking-[-.04em]">Adicionar novo produto</h2>
+              <p className="m-0 text-[13px] text-[var(--muted)]">Os preços são guardados com segurança em Meticais (MT).</p>
             </div>
           </div>
-          <form className="form-grid" onSubmit={handleProductSubmit}>
+          <form className="grid grid-cols-1 gap-[14px] min-[851px]:grid-cols-2 [&>label]:grid [&>label]:gap-[7px] [&>label]:text-[11px] [&>label]:font-bold [&>label]:text-[#506472]" onSubmit={handleProductSubmit}>
             <label>
               Nome do produto
               <input 
@@ -292,7 +296,7 @@ export default function Workspace({
               />
             </label>
 
-            <label className="wide">
+            <label className="col-span-full max-[850px]:col-auto">
               Categoria do produto (Definida pela sua loja)
               <select 
                 required
@@ -311,7 +315,7 @@ export default function Workspace({
             </label>
 
             {/* Campo de Upload de 1 Foto para o Produto */}
-            <label className="wide">
+            <label className="col-span-full max-[850px]:col-auto">
               Fotografia do Produto (1 Foto)
               <input 
                 type="file" 
@@ -323,10 +327,10 @@ export default function Workspace({
                   }
                 }}
               />
-              <small style={{ color: "#666", fontSize: "0.75rem" }}>Selecione uma imagem clara e nítida do artigo.</small>
+              <small className="text-xs text-[#666]">Selecione uma imagem clara e nítida do artigo.</small>
             </label>
 
-            <label className="wide">
+            <label className="col-span-full max-[850px]:col-auto">
               Detalhes do produto
               <textarea 
                 required 
@@ -337,7 +341,7 @@ export default function Workspace({
               />
             </label>
 
-            <button className="button button-dark" type="submit" disabled={busy || uploadingImage}>
+            <button className="inline-flex min-h-[42px] items-center justify-center gap-[9px] justify-self-start rounded-lg bg-[var(--navy)] px-[17px] text-xs font-bold text-white disabled:cursor-wait disabled:opacity-[.56]" type="submit" disabled={busy || uploadingImage}>
               {uploadingImage ? "A carregar imagem..." : "Adicionar produto à loja"}
             </button>
           </form>
@@ -345,19 +349,33 @@ export default function Workspace({
       )}
 
       {profile.role === "client" && (
-        <div className="panel">
-          <div className="section-head">
+        <div className="rounded-xl border border-[var(--line)] bg-white p-6">
+          <div className="mb-[26px] flex items-end justify-between gap-[22px] max-[700px]:flex-col">
             <div>
-              <p className="eyebrow">OFERECER SERVIÇOS (PLANO 1: SERVIÇOS)</p>
-              <h2>Cadastre-se como prestador de serviços</h2>
+              <p className="text-[10px] font-extrabold tracking-[.17em] text-[var(--blue)]">OFERECER SERVIÇOS (PLANO 1: SERVIÇOS)</p>
+              <h2 className="my-2 mt-[9px] font-[Manrope,sans-serif] text-[clamp(24px,3vw,34px)] font-extrabold tracking-[-.04em]">Cadastre-se como prestador de serviços</h2>
             </div>
           </div>
-          <form className="form-grid" onSubmit={(event) => void onRegisterProvider(event, providerForm)}>
-            <div className="wide">
-              <p className="form-group-label">Áreas de Atuação / Especialidades (Pode selecionar várias):</p>
-              <div className="checkbox-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "10px", marginTop: "8px" }}>
+          <form className="grid grid-cols-1 gap-[14px] min-[851px]:grid-cols-2 [&>label]:grid [&>label]:gap-[7px] [&>label]:text-[11px] [&>label]:font-bold [&>label]:text-[#506472]" onSubmit={(event) => void onRegisterProvider(event, providerForm)}>
+            <label className="col-span-full max-[850px]:col-auto">
+              Bairro onde presta serviços
+              <select
+                required
+                value={providerForm.neighborhood}
+                onChange={(event) => handleProviderNeighborhoodChange(event.target.value)}
+              >
+                <option value="">-- Escolha o bairro --</option>
+                {CHIMOIO_NEIGHBORHOODS.map((neighborhood) => (
+                  <option key={neighborhood.name} value={neighborhood.name}>{neighborhood.name}</option>
+                ))}
+              </select>
+              <small>O mapa usará o centro aproximado do bairro para localizar os seus serviços.</small>
+            </label>
+            <div className="col-span-full max-[850px]:col-auto">
+              <p className="mb-2 text-[11px] font-bold text-[#506472]">Áreas de Atuação / Especialidades (Pode selecionar várias):</p>
+              <div className="mt-2 grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-[10px]">
                 {SERVICE_CATEGORIES.map((cat) => (
-                  <label key={cat} className="checkbox-item" style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                  <label key={cat} className="flex cursor-pointer items-center gap-2 text-xs text-[#506472]">
                     <input 
                       type="checkbox"
                       checked={Array.isArray(providerForm.category) && providerForm.category.includes(cat)}
@@ -369,7 +387,7 @@ export default function Workspace({
               </div>
             </div>
 
-            <label className="wide">
+            <label className="col-span-full max-[850px]:col-auto">
               Preço inicial ou taxa de visita (MT)
               <input 
                 required 
@@ -382,7 +400,7 @@ export default function Workspace({
               />
             </label>
 
-            <label className="wide">
+            <label className="col-span-full max-[850px]:col-auto">
               Sobre si e sua experiência (Apresentação profissional)
               <textarea 
                 required 
@@ -393,7 +411,7 @@ export default function Workspace({
               />
             </label>
 
-            <button className="button button-dark" type="submit" disabled={busy}>Criar perfil de prestador</button>
+            <button className="inline-flex min-h-[42px] items-center justify-center gap-[9px] justify-self-start rounded-lg bg-[var(--navy)] px-[17px] text-xs font-bold text-white disabled:cursor-wait disabled:opacity-[.56]" type="submit" disabled={busy}>Criar perfil de prestador</button>
           </form>
         </div>
       )}

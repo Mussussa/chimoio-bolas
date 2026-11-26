@@ -31,7 +31,8 @@ function profileDraftFromDashboard(dashboard: ProviderDashboardData): ProviderPr
     name: dashboard.profile.name,
     bio: dashboard.provider.bio,
     category: dashboard.provider.category,
-    basePrice: dashboard.provider.basePrice
+    basePrice: dashboard.provider.basePrice,
+    neighborhood: dashboard.provider.neighborhood ?? ""
   };
 }
 
@@ -98,6 +99,7 @@ export default function ProviderDashboard({ session, refreshCatalog, onProfileCh
       setDashboard((current) => current ? { ...current, ...result } : current);
       setProfileDraft({ ...draft, basePrice: String(result.provider.basePrice) });
       onProfileChange({ name: result.profile.name, avatarUrl: result.profile.avatarUrl });
+      await refreshCatalog();
       setMessage("Perfil profissional atualizado.");
     } catch (saveError) {
       setError((saveError as Error).message);
@@ -164,28 +166,28 @@ export default function ProviderDashboard({ session, refreshCatalog, onProfileCh
   }
 
   return (
-    <section className="provider-dashboard section" id="painel-prestador">
-      <header className="provider-dashboard-heading">
+    <section className="min-h-[calc(100vh-160px)] px-[clamp(20px,7vw,100px)] pt-11 pb-[70px] max-[560px]:pb-12" id="painel-prestador">
+      <header className="flex flex-col items-start justify-between gap-5 border-b border-[#e7e1ca] pb-6 min-[561px]:flex-row min-[561px]:items-center">
         <div>
-          <p className="eyebrow">ÁREA DO PRESTADOR</p>
-          <h1>O seu espaço profissional</h1>
-          <p>Apresente as suas competências e mantenha os serviços atualizados.</p>
+          <p className="mb-1 text-[10px] font-extrabold tracking-[.17em] text-[#2f856c]">ÁREA DO PRESTADOR</p>
+          <h1 className="my-2 font-[Manrope,sans-serif] text-[32px] font-extrabold text-[#302b18] max-[560px]:text-[27px]">O seu espaço profissional</h1>
+          <p className="m-0 text-[13px] text-[#716e60]">Apresente as suas competências e mantenha os serviços atualizados.</p>
         </div>
-        <span className={`provider-status ${dashboard?.provider.verified ? "is-verified" : ""}`}>
+        <span className={`rounded-md px-[11px] py-2 text-[11px] font-bold ${dashboard?.provider.verified ? "bg-[#e6f4ec] text-[#267155]" : "bg-[#fff3da] text-[#885a1c]"}`}>
           {dashboard?.provider.verified ? "Perfil verificado" : "Perfil não verificado"}
         </span>
       </header>
 
-      <nav className="provider-tabs" aria-label="Secções do painel do prestador">
-        <button type="button" className={tab === "overview" ? "is-active" : ""} onClick={() => setTab("overview")}>Visão geral</button>
-        <button type="button" className={tab === "profile" ? "is-active" : ""} onClick={() => setTab("profile")}>Perfil profissional</button>
-        <button type="button" className={tab === "services" ? "is-active" : ""} onClick={() => setTab("services")}>Serviços</button>
-        <Link className="messages-dashboard-tab" to="/mensagens">Mensagens</Link>
+      <nav className="my-5 mb-6 flex gap-6 overflow-x-auto border-b border-[#e7e1ca] max-[560px]:gap-[15px]" aria-label="Secções do painel do prestador">
+        <button type="button" className={`shrink-0 border-0 border-b-2 border-transparent bg-transparent px-0.5 pb-3 text-[13px] font-bold max-[560px]:text-xs ${tab === "overview" ? "border-b-[#2f856c] text-[#2f856c]" : "text-[#716e60]"}`} onClick={() => setTab("overview")}>Visão geral</button>
+        <button type="button" className={`shrink-0 border-0 border-b-2 border-transparent bg-transparent px-0.5 pb-3 text-[13px] font-bold max-[560px]:text-xs ${tab === "profile" ? "border-b-[#2f856c] text-[#2f856c]" : "text-[#716e60]"}`} onClick={() => setTab("profile")}>Perfil profissional</button>
+        <button type="button" className={`shrink-0 border-0 border-b-2 border-transparent bg-transparent px-0.5 pb-3 text-[13px] font-bold max-[560px]:text-xs ${tab === "services" ? "border-b-[#2f856c] text-[#2f856c]" : "text-[#716e60]"}`} onClick={() => setTab("services")}>Serviços</button>
+        <Link className="ml-auto shrink-0 border-b-2 border-transparent px-0.5 pb-3 text-[13px] font-bold text-[#765900] hover:border-b-[#9abbd0] max-[560px]:text-xs" to="/mensagens">Mensagens</Link>
       </nav>
 
-      {error && <p className="provider-feedback is-error" role="alert">{error}</p>}
-      {message && <output className="provider-feedback">{message}</output>}
-      {loading && <output className="provider-loading">A carregar o painel...</output>}
+      {error && <p className="my-[14px] block rounded-md bg-[#fff0ec] px-[14px] py-3 text-[13px] text-[#9e3b2e]" role="alert">{error}</p>}
+      {message && <output className="my-[14px] block rounded-md bg-[#eaf5ef] px-[14px] py-3 text-[13px] text-[#267155]">{message}</output>}
+      {loading && <output className="my-[14px] block rounded-md bg-[#eaf5ef] px-[14px] py-3 text-[13px] text-[#267155]">A carregar o painel...</output>}
 
       {!loading && dashboard && tab === "overview" && (
         <ProviderOverview
@@ -212,7 +214,7 @@ export default function ProviderDashboard({ session, refreshCatalog, onProfileCh
         />
       )}
       {!loading && dashboard && tab === "services" && (
-        <div className="provider-services-layout">
+        <div className="grid items-start gap-4 min-[851px]:grid-cols-2">
           <ProviderServiceForm
             categories={dashboard.provider.category}
             saving={saving}
@@ -220,10 +222,10 @@ export default function ProviderDashboard({ session, refreshCatalog, onProfileCh
             onSubmit={submitService}
             onCancelEdit={() => setEditingService(null)}
           />
-          <section className="provider-panel">
-            <header className="provider-panel-heading">
-              <div><p className="eyebrow">PORTFÓLIO</p><h2>Serviços publicados</h2></div>
-              <span className="provider-count">{dashboard.services.length}</span>
+          <section className="min-w-0 rounded-lg border border-[#e7e1ca] bg-white p-[22px] max-[560px]:p-[17px]">
+            <header className="mb-4 flex items-center justify-between gap-[14px]">
+              <div><p className="mb-1.5 text-[10px] font-extrabold tracking-[.17em] text-[#2f856c]">PORTFÓLIO</p><h2 className="m-0 font-[Manrope,sans-serif] text-lg font-bold text-[#302b18]">Serviços publicados</h2></div>
+              <span className="grid h-8 w-8 place-items-center rounded-full bg-[#e9f4ef] text-xs font-extrabold text-[#2f856c]">{dashboard.services.length}</span>
             </header>
             <ProviderServiceList
               services={dashboard.services}

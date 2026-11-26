@@ -18,6 +18,8 @@ export class User extends Model<InferAttributes<User>, InferCreationAttributes<U
   declare phone: string | null;
   declare role: CreationOptional<UserRole>;
   declare avatarUrl: string | null;
+  declare ageGroup: string | null;
+  declare neighborhood: string | null;
   declare createdAt: CreationOptional<Date>;
 }
 
@@ -36,6 +38,8 @@ export function initializeUserModel(sequelize: Sequelize): void {
     },
     role: { type: DataTypes.ENUM("client", "lojista", "prestador", "admin"), allowNull: false, defaultValue: "client" },
     avatarUrl: { type: DataTypes.TEXT, allowNull: true, field: "avatar_url" },
+    ageGroup: { type: DataTypes.STRING(10), allowNull: true, field: "age_group" },
+    neighborhood: { type: DataTypes.STRING(120), allowNull: true },
     createdAt: { type: DataTypes.DATE, field: "created_at" }
   }, modelOptions(sequelize, "users"));
   initializeEncryptedField(User, "phone");

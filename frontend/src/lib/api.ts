@@ -8,6 +8,7 @@ import type {
   Product,
   ProductForm,
   Profile,
+  ProfileUpdate,
   ProviderForm,
   ProviderReview,
   Service,
@@ -84,7 +85,7 @@ export async function loadProfile(session: Session): Promise<Profile> {
 }
 
 export function updateProfile(session: Session, body: ProfileUpdate) {
-  return api<Pick<Profile, "id" | "name" | "email" | "phone" | "avatarUrl" | "role">>(
+  return api<Pick<Profile, "id" | "name" | "email" | "phone" | "avatarUrl" | "ageGroup" | "neighborhood" | "role">>(
     "/profile/me",
     session,
     { method: "PATCH", body }
@@ -152,6 +153,7 @@ export type ProviderAccount = {
   category: string[];
   bio: string;
   basePrice: string;
+  neighborhood: string | null;
   verified: boolean;
   platformMember: boolean;
   createdAt: string;
@@ -168,6 +170,7 @@ export type ProviderProfileUpdate = {
   category: string[];
   bio: string;
   basePrice: number;
+  neighborhood: string;
   avatarUrl: string | null;
 };
 
@@ -179,8 +182,6 @@ export type ProviderServicePayload = {
   deliveryTime: string;
   images: string[];
 };
-
-export type ProfileUpdate = Pick<Profile, "name" | "phone" | "avatarUrl">;
 
 export type ReviewPayload = {
   targetType: "store" | "service_provider";

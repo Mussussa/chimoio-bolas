@@ -86,7 +86,8 @@ createProduct: Joi.object({
       .required()
       .label("As áreas de atuação"),
     bio: requiredText("A biografia", 2000),
-    basePrice: price("O preço base")
+    basePrice: price("O preço base"),
+    neighborhood: requiredText("O bairro", 120)
   }),
   publishService: Joi.object({
     title: requiredText("O título", 180),
@@ -101,6 +102,7 @@ createProduct: Joi.object({
     category: Joi.array().items(Joi.string().trim().min(1).max(100)).min(1).required().label("As áreas de atuação"),
     bio: requiredText("A biografia", 2000),
     basePrice: price("O preço base"),
+    neighborhood: requiredText("O bairro", 120),
     avatarUrl: Joi.string().uri().max(2000).allow(null, "").optional().label("A fotografia de perfil")
   }),
   updateService: Joi.object({
@@ -114,7 +116,9 @@ createProduct: Joi.object({
   updateProfile: Joi.object({
     name: requiredText("O nome", 120),
     phone: Joi.string().max(40).allow(null, "").optional().label("O telefone"),
-    avatarUrl: Joi.string().uri().max(2000).allow(null, "").optional().label("A fotografia de perfil")
+    avatarUrl: Joi.string().uri().max(2000).allow(null, "").optional().label("A fotografia de perfil"),
+    ageGroup: Joi.string().valid("18-24", "25-34", "35+").allow(null, "").optional().label("A faixa etária"),
+    neighborhood: Joi.string().trim().max(120).allow(null, "").optional().label("O bairro de residência")
   }),
   createReview: Joi.object({
     targetType: Joi.string().valid("store", "service_provider").required().label("O tipo de destino"),

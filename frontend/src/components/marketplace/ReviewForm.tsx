@@ -25,12 +25,12 @@ export default function ReviewForm({ targetType, targetId, targetName, busy, onS
   }
 
   return (
-    <div className="review-actions">
-      <button className="link-button" type="button" onClick={() => setOpen((current) => !current)}>
+    <div className="mt-3">
+      <button className="border-0 bg-transparent font-bold text-[var(--blue)] hover:text-[var(--blue)]" type="button" onClick={() => setOpen((current) => !current)}>
         {open ? "Cancelar avaliação" : "Avaliar"}
       </button>
       {open && (
-        <form className="review-form" onSubmit={(event) => void submit(event)}>
+        <form className="mt-[9px] grid gap-[9px] rounded-lg border border-[var(--line)] bg-[#f8fafb] p-3" onSubmit={(event) => void submit(event)}>
           <label>
             Classificação de {targetName}
             <select value={rating} onChange={(event) => setRating(event.target.value)}>
@@ -41,7 +41,7 @@ export default function ReviewForm({ targetType, targetId, targetName, busy, onS
             Comentário (opcional)
             <textarea maxLength={1000} value={comment} onChange={(event) => setComment(event.target.value)} />
           </label>
-          <button className="button button-outline" type="submit" disabled={busy}>Enviar avaliação</button>
+          <button className="inline-flex min-h-[42px] items-center justify-center gap-[9px] rounded-lg border border-[#c8d6dd] bg-white px-[17px] text-xs font-bold text-[var(--navy)] disabled:cursor-wait disabled:opacity-[.56]" type="submit" disabled={busy}>Enviar avaliação</button>
         </form>
       )}
     </div>

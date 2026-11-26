@@ -12,10 +12,11 @@ export const registerProvider: RequestHandler = async (req, res, next) => {
       return sendError(res, 403, "Esta conta não pode registar um perfil de prestador.");
     }
 
-    const { category, bio, basePrice } = req.body as {
+    const { category, bio, basePrice, neighborhood } = req.body as {
       category: string[];
       bio: string;
       basePrice: number;
+      neighborhood: string;
     };
     const existing = await ServiceProvider.findOne({ where: { userId: user.id } });
     if (existing) return sendError(res, 409, "Já existe um perfil de prestador para esta conta.");
@@ -28,6 +29,7 @@ export const registerProvider: RequestHandler = async (req, res, next) => {
         category: category as (typeof SERVICE_CATEGORIES)[number][],
         bio: bio.trim(),
         basePrice: Number(basePrice).toFixed(2),
+        neighborhood: neighborhood.trim(),
         verified: false,
         platformMember: true
       }, { transaction });
@@ -68,11 +70,12 @@ export const updateMyProvider: RequestHandler = async (req, res, next) => {
     const provider = await ServiceProvider.findOne({ where: { userId: user.id } });
     if (!provider) return sendError(res, 404, "Perfil de prestador não encontrado.");
 
-    const { name, category, bio, basePrice, avatarUrl } = req.body as {
+    const { name, category, bio, basePrice, neighborhood, avatarUrl } = req.body as {
       name: string;
       category: string[];
       bio: string;
       basePrice: number | string;
+      neighborhood: string;
       avatarUrl?: string | null;
     };
     const unsupportedCategory = category.find((item) =>
@@ -95,6 +98,7 @@ export const updateMyProvider: RequestHandler = async (req, res, next) => {
       provider.category = category as typeof provider.category;
       provider.bio = bio.trim();
       provider.basePrice = Number(basePrice).toFixed(2);
+      provider.neighborhood = neighborhood.trim();
       await Promise.all([user.save({ transaction }), provider.save({ transaction })]);
     });
 

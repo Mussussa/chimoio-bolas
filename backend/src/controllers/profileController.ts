@@ -17,6 +17,8 @@ export const getProfile: RequestHandler = async (req, res, next) => {
       email: user.email,
       phone: user.phone,
       avatarUrl: user.avatarUrl,
+      ageGroup: user.ageGroup,
+      neighborhood: user.neighborhood,
       role: user.role,
       store: store ? {
         id: store.id,
@@ -35,15 +37,26 @@ export const getProfile: RequestHandler = async (req, res, next) => {
   }
 };
 
-// Actualiza os dados pessoais do utilizador; o frontend refresca o nome, contacto e avatar apresentados na conta.
+// Actualiza os dados pessoais do utilizador; o frontend refresca o perfil após guardar.
 export const updateProfile: RequestHandler = async (req, res, next) => {
   try {
     const user = req.appUser as User;
     user.name = req.body.name.trim();
     if (req.body.phone !== undefined) user.phone = req.body.phone?.trim() || null;
     if (req.body.avatarUrl !== undefined) user.avatarUrl = req.body.avatarUrl?.trim() || null;
+    if (req.body.ageGroup !== undefined) user.ageGroup = req.body.ageGroup || null;
+    if (req.body.neighborhood !== undefined) user.neighborhood = req.body.neighborhood?.trim() || null;
     await user.save();
-    return sendSuccess(res, { id: user.id, name: user.name, email: user.email, phone: user.phone, avatarUrl: user.avatarUrl, role: user.role }, 200, "Perfil actualizado.");
+    return sendSuccess(res, {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      avatarUrl: user.avatarUrl,
+      ageGroup: user.ageGroup,
+      neighborhood: user.neighborhood,
+      role: user.role
+    }, 200, "Perfil actualizado.");
   } catch (error) {
     next(error);
   }

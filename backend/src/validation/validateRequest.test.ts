@@ -117,4 +117,28 @@ describe("validação Joi", () => {
     expect(response.status).toBe(200);
     expect(response.body.avatarUrl).toBe("https://storage.example/perfil.jpg");
   });
+
+  it("valida os novos campos pessoais do perfil", async () => {
+    const response = await request(app).patch("/profile").send({
+      name: "Ana",
+      ageGroup: "25-34",
+      neighborhood: "Bairro Nhamaonha",
+      avatarUrl: "https://storage.example/perfil.jpg"
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      ageGroup: "25-34",
+      neighborhood: "Bairro Nhamaonha"
+    });
+  });
+
+  it("rejeita uma faixa etária que não esteja definida", async () => {
+    const response = await request(app).patch("/profile").send({
+      name: "Ana",
+      ageGroup: "menor"
+    });
+
+    expect(response.status).toBe(400);
+  });
 });

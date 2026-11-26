@@ -44,39 +44,39 @@ export default function MessagesCenter(props: MessagesCenterProps) {
   }
 
   return (
-    <main className="messages-center">
-      <header className="section messages-center-heading">
+    <main className="min-h-[60vh]">
+      <header className="items-end px-[clamp(20px,7vw,100px)] pb-5 pt-12">
         <div>
-          <p className="eyebrow">A SUA CAIXA DE ENTRADA</p>
-          <h1>Mensagens</h1>
-          <p>Conversas e negociações, organizadas por assunto.</p>
+          <p className="text-[10px] font-extrabold tracking-[.17em] text-[var(--blue)]">A SUA CAIXA DE ENTRADA</p>
+          <h1 className="my-2 mt-[9px] font-[Manrope,sans-serif] text-[clamp(28px,3.5vw,38px)] font-extrabold tracking-[-.04em]">Mensagens</h1>
+          <p className="m-0 text-[13px] text-[var(--muted)]">Conversas e negociações, organizadas por assunto.</p>
         </div>
       </header>
       {canSeeServices && canSeeStores && (
-        <nav className="message-topics" role="tablist" aria-label="Assunto das mensagens">
+        <nav className="mx-[clamp(20px,7vw,100px)] flex w-fit gap-1 rounded-[9px] border border-[#e1e8eb] bg-[#f0f4f6] p-1" role="tablist" aria-label="Assunto das mensagens">
           <button
             type="button"
             role="tab"
             aria-selected={activeTopic === "servicos"}
             aria-controls="messages-topic-panel"
-            className={activeTopic === "servicos" ? "is-active" : ""}
+            className={`inline-flex min-h-[34px] items-center gap-2 rounded-md border-0 px-3 text-xs font-bold ${activeTopic === "servicos" ? "bg-white text-[var(--navy)] shadow-[0_1px_3px_#18354816]" : "bg-transparent text-[#647684]"}`}
             onClick={() => selectTopic("servicos")}
           >
-            Serviços <span>{props.negotiations.length}</span>
+            Serviços <span className={`min-w-[18px] rounded-[10px] px-[5px] py-0.5 text-center text-[10px] ${activeTopic === "servicos" ? "bg-[var(--yellow-soft)] text-[var(--blue)]" : "bg-[#eaf0f3] text-[#607684]"}`}>{props.negotiations.length}</span>
           </button>
           <button
             type="button"
             role="tab"
             aria-selected={activeTopic === "lojas"}
             aria-controls="messages-topic-panel"
-            className={activeTopic === "lojas" ? "is-active" : ""}
+            className={`inline-flex min-h-[34px] items-center gap-2 rounded-md border-0 px-3 text-xs font-bold ${activeTopic === "lojas" ? "bg-white text-[var(--navy)] shadow-[0_1px_3px_#18354816]" : "bg-transparent text-[#647684]"}`}
             onClick={() => selectTopic("lojas")}
           >
-            Lojas e produtos <span>{props.conversations.length}</span>
+            Lojas e produtos <span className={`min-w-[18px] rounded-[10px] px-[5px] py-0.5 text-center text-[10px] ${activeTopic === "lojas" ? "bg-[var(--yellow-soft)] text-[var(--blue)]" : "bg-[#eaf0f3] text-[#607684]"}`}>{props.conversations.length}</span>
           </button>
         </nav>
       )}
-      <div id="messages-topic-panel" role="tabpanel" className="messages-center-content">
+      <div id="messages-topic-panel" role="tabpanel">
         {activeTopic === "servicos" && canSeeServices && (
           <Negotiations
             negotiations={props.negotiations}

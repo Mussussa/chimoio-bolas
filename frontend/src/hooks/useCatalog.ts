@@ -2,6 +2,8 @@ import { useCallback, useMemo, useState } from "react";
 import { loadCatalog as fetchCatalog } from "../lib/api";
 import type { Catalog, Notice } from "../lib/types";
 import type { Dispatch, SetStateAction } from "react";
+import { useEffect } from "react";
+import { readPreferredNeighborhood, savePreferredNeighborhood } from "../lib/locationPreference";
 
 const emptyCatalog: Catalog = { stores: [], mapStores: [], products: [], providers: [], services: [], providerReviews: [] };
 
@@ -12,6 +14,11 @@ export default function useCatalog(setNotice: Dispatch<SetStateAction<Notice>>) 
   const [search, setSearch] = useState("");
   const [nearby, setNearby] = useState(false);
   const [coordinates, setCoordinates] = useState<[number, number] | null>(null);
+  const [selectedNeighborhood, setSelectedNeighborhood] = useState(readPreferredNeighborhood);
+
+  useEffect(() => {
+    savePreferredNeighborhood(selectedNeighborhood);
+  }, [selectedNeighborhood]);
 
   const loadCatalog = useCallback(async () => {
     setCatalogStatus("loading");
@@ -51,6 +58,12 @@ export default function useCatalog(setNotice: Dispatch<SetStateAction<Notice>>) 
     );
   }, [setNotice]);
 
+  const selectNeighborhood = useCallback((neighborhood: string) => {
+    setSelectedNeighborhood(neighborhood);
+    setCoordinates(null);
+    setNearby(false);
+  }, []);
+
   return {
     catalog,
     setCatalog,
@@ -60,6 +73,8 @@ export default function useCatalog(setNotice: Dispatch<SetStateAction<Notice>>) 
     setSearch,
     nearby,
     setNearby,
+    selectedNeighborhood,
+    selectNeighborhood,
     coordinates,
     setCoordinates,
     visibleProducts,

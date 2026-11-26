@@ -81,12 +81,12 @@ export default function SharePageButton({ title, text, label = "Partilhar", url,
   }
 
   return (
-    <div className="share-page">
-      <div className="share-page-actions">
-        <button type="button" className="button button-outline" onClick={() => void sharePage()}>
+    <div>
+      <div className="flex flex-wrap gap-2">
+        <button type="button" className="inline-flex min-h-[42px] items-center justify-center gap-[9px] rounded-lg border border-[#c8d6dd] bg-white px-[17px] text-xs font-bold text-[var(--navy)]" onClick={() => void sharePage()}>
           {label}
         </button>
-        <button type="button" className="button button-outline" onClick={() => void copyLink()}>
+        <button type="button" className="inline-flex min-h-[42px] items-center justify-center gap-[9px] rounded-lg border border-[#c8d6dd] bg-white px-[17px] text-xs font-bold text-[var(--navy)]" onClick={() => void copyLink()}>
           Copiar link
         </button>
       </div>

@@ -20,6 +20,7 @@ export class ServiceProvider extends Model<InferAttributes<ServiceProvider>, Inf
   declare category: Array<typeof SERVICE_CATEGORIES[number]>;
   declare bio: string;
   declare basePrice: string;
+  declare neighborhood: string | null;
   declare verified: CreationOptional<boolean>;
   declare platformMember: CreationOptional<boolean>;
   declare createdAt: CreationOptional<Date>;
@@ -36,6 +37,7 @@ export function initializeServiceProviderModel(sequelize: Sequelize): void {
     },
     bio: { type: DataTypes.TEXT, allowNull: false },
     basePrice: { type: DataTypes.DECIMAL(12, 2), allowNull: false, field: "base_price" },
+    neighborhood: { type: DataTypes.STRING(120), allowNull: true },
     verified: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
     platformMember: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true, field: "platform_member" },
     createdAt: { type: DataTypes.DATE, field: "created_at" }

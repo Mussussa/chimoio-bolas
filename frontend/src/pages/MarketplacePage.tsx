@@ -7,9 +7,11 @@ import ProfileSettingsForm from "../components/auth/ProfileSettingsForm";
 import { Hero, NoticeBanner, SiteFooter, SiteHeader, VisitorGuide } from "../components/layout/SiteChrome";
 import MessagesCenter, { LegacyStoreConversationRedirect } from "../components/messages/MessagesCenter";
 import Marketplace from "../components/marketplace/Marketplace";
+import ContactSafetyDialog from "../components/marketplace/ContactSafetyDialog";
 import Workspace from "../components/workspace/Workspace";
 import MerchantDashboard from "./MerchantDashboard";
 import ProviderDashboard from "./ProviderDashboard";
+import InformationPage from "./InformationPage";
 import {
   createProduct as createProductRequest,
   createReview as createReviewRequest,
@@ -18,7 +20,7 @@ import {
   updateProductPrice as updateProductPriceRequest,
   verifyStore as verifyStoreRequest
 } from "../lib/api";
-import type { Notice, ProductForm, ProviderForm, StoreForm } from "../lib/types";
+import type { Notice, ProductForm, ProfileUpdate, ProviderForm, StoreForm } from "../lib/types";
 import useAuth from "../hooks/useAuth";
 import useCatalog from "../hooks/useCatalog";
 import useNegotiations from "../hooks/useNegotiations";
@@ -33,11 +35,16 @@ import {
 } from "./PublicPages";
 
 type StoreRegistration = StoreForm & { neighborhood?: string };
+type ContactSafetyPrompt = Readonly<{
+  onContinue: () => Promise<void>;
+  onCancel: () => void;
+}>;
 
 export default function MarketplacePage() {
   const [notice, setNotice] = useState<Notice>(null);
   const [busy, setBusy] = useState(false);
   const [priceDrafts, setPriceDrafts] = useState<Record<string, string>>({});
+  const [contactSafetyPrompt, setContactSafetyPrompt] = useState<ContactSafetyPrompt | null>(null);
   const navigate = useNavigate();
   const dismissNotice = useCallback(() => setNotice(null), []);
   const auth = useAuth({ setNotice, setBusy });
@@ -47,7 +54,8 @@ export default function MarketplacePage() {
   const { session, profile, setProfile } = auth;
   const {
     catalog, catalogStatus, catalogError, search, setSearch, nearby, setNearby,
-    coordinates, setCoordinates, visibleProducts, visibleServices, loadCatalog, locate
+    coordinates, setCoordinates, selectedNeighborhood, selectNeighborhood,
+    visibleProducts, visibleServices, loadCatalog, locate
   } = catalogState;
   const {
     negotiations, pendingCount, selectedNegotiation, messageForm,
@@ -149,18 +157,31 @@ export default function MarketplacePage() {
     if (result) await loadCatalog();
   }
 
-  function updateAccountProfile(values: { name: string; phone: string | null }) {
-    return auth.updateAccountProfile(values);
+  function updateAccountProfile(values: ProfileUpdate, avatarFile: File | null) {
+    return auth.updateAccountProfile(values, avatarFile);
   }
 
-  async function startServiceNegotiation(serviceId: string) {
-    if (await startNegotiation(serviceId)) await navigate("/mensagens?assunto=servicos");
+  function startServiceNegotiation(serviceId: string) {
+    setContactSafetyPrompt({
+      onContinue: async () => {
+        if (await startNegotiation(serviceId)) await navigate("/mensagens?assunto=servicos");
+      },
+      onCancel: () => setContactSafetyPrompt(null)
+    });
   }
 
-  async function startStoreConversation(storeId: string, content: string, productId?: string) {
-    const conversationId = await storeConversationState.start(storeId, content, productId);
-    if (conversationId) return conversationId;
-    return null;
+  function startStoreConversation(storeId: string, content: string, productId?: string): Promise<string | null> {
+    return new Promise((resolve) => {
+      setContactSafetyPrompt({
+        onContinue: async () => {
+          resolve(await storeConversationState.start(storeId, content, productId));
+        },
+        onCancel: () => {
+          resolve(null);
+          setContactSafetyPrompt(null);
+        }
+      });
+    });
   }
 
   function renderWorkspace() {
@@ -179,7 +200,7 @@ export default function MarketplacePage() {
 
   function renderDashboard() {
     if (!profile || !session) {
-      return <section className="section"><p className="empty">Inicia sessão para aceder à área de gestão.</p></section>;
+      return <section className="px-[clamp(20px,7vw,100px)] py-[70px] max-[560px]:py-12"><p className="col-span-full rounded-[10px] border border-dashed border-[#cbd8de] p-6 text-center text-[13px] text-[#716e60]">Inicia sessão para aceder à área de gestão.</p></section>;
     }
     if (profile.role === "lojista") {
       return <MerchantDashboard session={session} refreshKey={catalog.products}>{renderWorkspace()}</MerchantDashboard>;
@@ -200,13 +221,19 @@ export default function MarketplacePage() {
   }
 
   return (
-    <main className="app-shell">
+    <main className="mx-auto min-h-screen max-w-[1440px] overflow-hidden bg-[#fbfaf6] pt-[82px] max-[560px]:pt-[130px]">
       <NoticeBanner notice={notice} onDismiss={dismissNotice} />
       <SiteHeader
         profile={profile}
         pendingNegotiations={pendingCount}
         onSignOut={() => void auth.signOut()}
       />
+      {contactSafetyPrompt && (
+        <ContactSafetyDialog
+          onContinue={contactSafetyPrompt.onContinue}
+          onCancel={contactSafetyPrompt.onCancel}
+        />
+      )}
       <Routes>
         <Route path="/" element={
           <>
@@ -224,11 +251,13 @@ export default function MarketplacePage() {
               search={search}
               nearby={nearby}
               coordinates={coordinates}
+              selectedNeighborhood={selectedNeighborhood}
               mapLoading={catalogStatus === "loading"}
               mapError={catalogStatus === "error" ? catalogError : null}
               priceDrafts={priceDrafts}
               onSearchChange={setSearch}
               onLocate={locate}
+              onSelectNeighborhood={selectNeighborhood}
               onClearLocation={() => { setNearby(false); setCoordinates(null); }}
               onPriceChange={(productId, value) => setPriceDrafts((current) => ({ ...current, [productId]: value }))}
               onUpdatePrice={(productId) => void updateProductPrice(productId)}
@@ -286,8 +315,14 @@ export default function MarketplacePage() {
           <ProductsDirectoryPage
             products={catalog.products}
             stores={catalog.stores}
+            mapStores={catalog.mapStores}
             query={search}
             onQueryChange={setSearch}
+            gps={coordinates}
+            mapLoading={catalogStatus === "loading"}
+            mapError={catalogStatus === "error" ? catalogError : null}
+            onLocate={locate}
+            onClearLocation={() => { setNearby(false); setCoordinates(null); }}
             profile={profile}
             busy={busy}
             onStartStoreConversation={startStoreConversation}
@@ -296,8 +331,14 @@ export default function MarketplacePage() {
         <Route path="/lojas" element={
           <StoresDirectoryPage
             stores={catalog.stores}
+            mapStores={catalog.mapStores}
             query={search}
             onQueryChange={setSearch}
+            gps={coordinates}
+            mapLoading={catalogStatus === "loading"}
+            mapError={catalogStatus === "error" ? catalogError : null}
+            onLocate={locate}
+            onClearLocation={() => { setNearby(false); setCoordinates(null); }}
             profile={profile}
             busy={busy}
             onStartStoreConversation={startStoreConversation}
@@ -319,6 +360,12 @@ export default function MarketplacePage() {
             services={catalog.services}
             query={search}
             onQueryChange={setSearch}
+            mapStores={catalog.mapStores}
+            gps={coordinates}
+            mapLoading={catalogStatus === "loading"}
+            mapError={catalogStatus === "error" ? catalogError : null}
+            onLocate={locate}
+            onClearLocation={() => { setNearby(false); setCoordinates(null); }}
             profile={profile}
             busy={busy}
             onStartNegotiation={(serviceId) => void startServiceNegotiation(serviceId)}
@@ -332,6 +379,9 @@ export default function MarketplacePage() {
             onStartNegotiation={(serviceId) => void startServiceNegotiation(serviceId)}
           />
         } />
+        <Route path="/seguranca" element={<InformationPage type="seguranca" />} />
+        <Route path="/privacidade" element={<InformationPage type="privacidade" />} />
+        <Route path="/termos" element={<InformationPage type="termos" />} />
         <Route path="/conversas" element={<Navigate to="/mensagens?assunto=lojas" replace />} />
         <Route path="/conversas/:conversationId" element={<LegacyStoreConversationRedirect />} />
         <Route path="/conta" element={

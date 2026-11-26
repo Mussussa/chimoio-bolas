@@ -4,8 +4,18 @@ export type Profile = {
   email: string;
   phone: string | null;
   avatarUrl?: string | null;
+  ageGroup?: "18-24" | "25-34" | "35+" | null;
+  neighborhood?: string | null;
   role: "client" | "lojista" | "prestador" | "admin";
   store?: { category: string[] } | null;
+};
+
+export type ProfileUpdate = {
+  name: string;
+  phone: string | null;
+  avatarUrl: string | null;
+  ageGroup: NonNullable<Profile["ageGroup"]> | null;
+  neighborhood: string | null;
 };
 
 export type Store = {
@@ -25,6 +35,7 @@ export type Store = {
 export type MapStore = Pick<Store, "id" | "name" | "category" | "address" | "verified"> & {
   latitude: number | string | null;
   longitude: number | string | null;
+  href?: string;
 };
 
 export type Product = {
@@ -43,6 +54,7 @@ export type ServiceProvider = {
   category: string[];
   bio: string;
   base_price: string;
+  neighborhood: string | null;
   verified: boolean;
   platform_member: boolean;
 };
@@ -97,10 +109,11 @@ export type ProviderReview = {
 
 export type Notice = { text: string; error?: boolean } | null;
 
-export type ProviderForm = { 
+export type ProviderForm = {
   category: string[]; 
   bio: string; 
   basePrice: string; 
+  neighborhood: string;
 };
 
 export type ServiceForm = { 

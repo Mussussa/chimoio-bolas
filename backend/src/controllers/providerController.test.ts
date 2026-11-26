@@ -44,6 +44,7 @@ describe("updateMyProvider", () => {
       category: ["Categoria antiga"],
       bio: "Experiência profissional",
       basePrice: 100,
+      neighborhood: "Centro / Comércio",
       avatarUrl: "https://storage.example/profile.jpg"
     };
     expect(requestSchemas.updateProvider.validate(body).error).toBeUndefined();
@@ -74,6 +75,7 @@ describe("updateMyProvider", () => {
       category: ["Categoria inventada"],
       bio: "Experiência profissional",
       basePrice: 100,
+      neighborhood: "Centro / Comércio",
       avatarUrl: "https://storage.example/profile.jpg"
     };
     expect(requestSchemas.updateProvider.validate(body).error).toBeUndefined();
@@ -90,5 +92,19 @@ describe("updateMyProvider", () => {
     }));
     expect(findServices).not.toHaveBeenCalled();
     expect(next).not.toHaveBeenCalled();
+  });
+
+  it("exige o bairro ao registar um prestador", () => {
+    const body = {
+      category: ["Construção"],
+      bio: "Experiência profissional",
+      basePrice: 100
+    };
+
+    expect(requestSchemas.registerProvider.validate(body).error).toBeDefined();
+    expect(requestSchemas.registerProvider.validate({
+      ...body,
+      neighborhood: "Centro / Comércio"
+    }).error).toBeUndefined();
   });
 });
